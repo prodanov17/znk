@@ -26,6 +26,7 @@ type ThrowCardResponse struct {
 	TakeCards        bool           `json:"take_cards"`
 	Value            int            `json:"value"`
 	UserID           string         `json:"user_id"`
+	Username         string         `json:"username"`
 	RoomID           string         `json:"room_id"`
 	TableCards       []game.Card    `json:"table_cards"`
 	TableValue       int            `json:"table_value"`
@@ -59,6 +60,7 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 			TakeCards:        value != -1,
 			Value:            value,
 			UserID:           a.UserID,
+			Username:         hub.Clients[a.UserID].Username,
 			RoomID:           a.RoomID,
 			TableCards:       game.TableCards(),
 			TableValue:       game.Table.TotalValue(),
