@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/prodanov17/znk/internal/game"
 )
@@ -36,7 +37,7 @@ func (a *StartGameAction) Execute(hub *Hub) error {
 
 	for key, value := range startGamePayload.Rules {
 		fmt.Println("key", key, "value", value)
-		intValue, err := strconv.Atoi(value)
+		intValue, err := strconv.Atoi(strings.TrimSpace(value))
 		if err != nil {
 			continue
 		}
@@ -145,6 +146,7 @@ type GameStatePayload struct {
 	DreamCard        game.Card       `json:"dream_card"`
 	DealerID         string          `json:"dealer_id"`
 	Playing          bool            `json:"playing"`
+	GameInfo         map[string]int  `json:"game_info"`
 }
 
 func (a *GetGameStateAction) Execute(hub *Hub) error {
@@ -165,7 +167,9 @@ func (a *GetGameStateAction) Execute(hub *Hub) error {
 				PlayersCardCount: game.PlayersCardCount(),
 				DreamCard:        game.Deck.DreamCard(),
 				DealerID:         dealer.UserID,
-				Playing:          game.CanDealCards()}
+				Playing:          game.CanDealCards(),
+				GameInfo:         game.Rules,
+			}
 
 			rawPayload, err := json.Marshal(gameStatePayload)
 			if err != nil {
