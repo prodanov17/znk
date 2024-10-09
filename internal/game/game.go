@@ -355,18 +355,17 @@ func (g *Game) checkCapture() int {
 		return g.Table.TotalValue()
 	}
 
+	if len(g.Table.Cards) < 2 {
+		return -1
+	}
 	if g.Table.IsInitialDeal {
 		if topCard.Rank == g.Table.Cards[0].Rank {
 			return g.Table.TotalValue()
 		}
-	}
-
-	if len(g.Table.Cards) < 2 {
-		return -1
-	}
-
-	if topCard.Rank == g.Table.Cards[len(g.Table.Cards)-2].Rank {
-		return g.Table.TotalValue()
+	} else {
+		if topCard.Rank == g.Table.Cards[len(g.Table.Cards)-2].Rank {
+			return g.Table.TotalValue()
+		}
 	}
 
 	return -1

@@ -19,16 +19,22 @@ type Card struct {
 }
 
 type Deck struct {
-	ID    int `json:"id"`
-	Cards []Card
+	ID              int `json:"id"`
+	Cards           []Card
+	CardDefinitions map[int]Card
 	Game
 }
 
 func NewDeck() *Deck {
 	return &Deck{
-		ID:    0,
-		Cards: []Card{},
+		ID:              0,
+		Cards:           []Card{},
+		CardDefinitions: make(map[int]Card),
 	}
+}
+
+func (d *Deck) Card(id int) Card {
+	return d.CardDefinitions[id]
 }
 
 func (d *Deck) InitDeck(filepath string) error {
@@ -79,6 +85,11 @@ func CompareCards(card1 Card, card2 Card) bool {
 func CreateDeck() *Deck {
 	deck := NewDeck()
 	deck.InitDeck(config.Env.DeckPath)
+
+	for _, card := range deck.Cards {
+		deck.CardDefinitions[card.ID] = card
+	}
+
 	fmt.Println("Deck created pre-shuffle", len(deck.Cards))
 	deck.Shuffle()
 	fmt.Println("Deck created", len(deck.Cards))

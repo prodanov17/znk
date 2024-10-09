@@ -162,6 +162,9 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	h.Broadcast <- &Message{Action: "player_left", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
 	delete(h.Clients, client.ID)
+	if len(room.Clients) == 0 {
+		delete(h.Room, client.RoomID)
+	}
 
 }
 

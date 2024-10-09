@@ -22,6 +22,7 @@ type PlayerCardCount struct {
 }
 type ThrowCardResponse struct {
 	CardID           int            `json:"card_id"`
+	Card             game.Card      `json:"card"`
 	TakeCards        bool           `json:"take_cards"`
 	Value            int            `json:"value"`
 	UserID           string         `json:"user_id"`
@@ -54,6 +55,7 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 	for _, player := range game.Players() {
 		throwCardResponse := ThrowCardResponse{
 			CardID:           throwCardPayload.CardID,
+			Card:             game.Deck.Card(throwCardPayload.CardID),
 			TakeCards:        value != -1,
 			Value:            value,
 			UserID:           a.UserID,

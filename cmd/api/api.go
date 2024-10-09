@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/prodanov17/znk/internal/middleware"
-	"github.com/prodanov17/znk/internal/services/user"
 	"github.com/prodanov17/znk/internal/ws"
 )
 
@@ -26,11 +25,6 @@ func (s *APIServer) Run() error {
 	router := http.NewServeMux()
 	subrouter := http.NewServeMux()
 	subrouter.Handle("/api/v1/", http.StripPrefix("/api/v1", router))
-
-	userStore := user.NewStore(s.db)
-	userService := user.NewService(userStore)
-	userHandler := user.NewHandler(userService)
-	userHandler.RegisterRoutes(router)
 
 	hub := ws.NewHub()
 	wsHandler := ws.NewHandler(hub)
