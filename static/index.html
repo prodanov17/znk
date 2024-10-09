@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dynamic Multiplayer Card Game Test</title>
+    <script src="index.js" defer></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      input,
+      button {
+        margin: 5px;
+        padding: 10px;
+      }
+      .container {
+        margin: 20px;
+      }
+      .card {
+        margin: 5px;
+        padding: 10px;
+        display: inline-block;
+        border: 1px solid #000;
+      }
+      .player-hand {
+        margin-top: 20px;
+      }
+      .table-cards {
+        margin-top: 20px;
+      }
+      button.throw-card {
+        margin: 5px;
+      }
+      .team-list {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Multiplayer Card Game Test</h2>
+      <label for="roomId">Room ID: </label>
+      <input type="text" id="roomId" placeholder="1234" value="1234" /><br />
+      <label for="userId">User ID: </label>
+      <input type="text" id="userId" placeholder="4" value="4" /><br />
+      <label for="username">Username: </label>
+      <input
+        type="text"
+        id="username"
+        placeholder="james2"
+        value="james2"
+      /><br />
+      <button id="connectBtn">Connect</button>
+      <div id="connectionStatus"></div>
+
+      <h3>Game Actions</h3>
+      <button id="startGameBtn" disabled>Start Game</button>
+      <button id="dealCardsBtn" disabled>Deal Cards</button>
+      <button id="changeTeamBtn" disabled>Change Team</button>
+      <!-- Changed button label -->
+
+      <h4>Your Hand:</h4>
+      <div class="player-hand" id="playerHand"></div>
+
+      <h4>Table Cards:</h4>
+      <div class="table-cards" id="tableCards"></div>
+
+      <h4>Teams:</h4>
+      <div class="team-list" id="teamList"></div>
+      <!-- Display Teams -->
+
+      <div id="response"></div>
+    </div>
+  </body>
+</html>

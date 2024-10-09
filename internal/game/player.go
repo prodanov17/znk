@@ -42,3 +42,11 @@ func (p *Player) ResetHand() {
 func (p *Player) IsEmptyHand() bool {
 	return len(p.Hand) == 0
 }
+
+func (p *Player) TotalValue() int {
+	total := 0
+	for _, card := range p.Hand {
+		total += card.Value
+	}
+	return total
+}

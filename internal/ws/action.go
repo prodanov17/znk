@@ -44,6 +44,42 @@ var Actions = map[string]func(userID, roomID string, payload json.RawMessage) Ac
 			Payload:    payload,
 		}
 	},
+	"throw_card": func(userID, roomID string, payload json.RawMessage) Action {
+		return &ThrowCardAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
+	"start_game": func(userID, roomID string, payload json.RawMessage) Action {
+		return &StartGameAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
+	"change_team": func(userID, roomID string, payload json.RawMessage) Action {
+		return &ChangeTeamAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
+	"get_teams": func(userID, roomID string, payload json.RawMessage) Action {
+		return &GetTeamsAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
+	"game_state": func(userID, roomID string, payload json.RawMessage) Action {
+		return &GetGameStateAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
+	"get_dealer": func(userID, roomID string, payload json.RawMessage) Action {
+		return &GetDealerAction{
+			BaseAction: NewBaseAction(userID, roomID),
+			Payload:    payload,
+		}
+	},
 }
 
 func CreateAction(actionType, gameID, userID string, payload json.RawMessage) (Action, error) {

@@ -1,8 +1,13 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
+	"os"
+
+	"github.com/prodanov17/znk/internal/config"
 )
 
 type Card struct {
@@ -26,21 +31,27 @@ func NewDeck() *Deck {
 	}
 }
 
-func (d *Deck) InitDeck() {
-	suits := []string{"hearts", "diamonds", "clubs", "spades"}
-	ranks := []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
-
-	for _, suit := range suits {
-		for _, rank := range ranks {
-			card := Card{
-				ID:    len(d.Cards),
-				Suit:  suit,
-				Rank:  rank,
-				Value: 0,
-			}
-			d.Cards = append(d.Cards, card)
-		}
+func (d *Deck) InitDeck(filepath string) error {
+	// Read the JSON file
+	file, err := os.Open(filepath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
 	}
+	defer file.Close()
+
+	// Read the file contents
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Unmarshal the JSON data into the deck's Cards slice
+	err = json.Unmarshal(data, &d.Cards)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	return nil
 }
 
 func (d *Deck) Shuffle() {
@@ -56,5 +67,27 @@ func (d *Deck) DrawCard() (*Card, error) {
 	}
 	card := d.Cards[0]
 	d.Cards = d.Cards[1:]
+	fmt.Println("Deck after draw", len(d.Cards))
 	return &card, nil
+}
+
+// compareCards compares two cards and returns true if they have the same rank.
+func CompareCards(card1 Card, card2 Card) bool {
+	return card1.Rank == card2.Rank
+}
+
+func CreateDeck() *Deck {
+	deck := NewDeck()
+	deck.InitDeck(config.Env.DeckPath)
+	fmt.Println("Deck created pre-shuffle", len(deck.Cards))
+	deck.Shuffle()
+	fmt.Println("Deck created", len(deck.Cards))
+	return deck
+}
+
+func (d *Deck) DreamCard() Card {
+	if len(d.Cards) == 0 {
+		return Card{}
+	}
+	return d.Cards[0]
 }

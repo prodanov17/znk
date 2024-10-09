@@ -1,22 +1,11 @@
 package game
 
-type GameRule struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Value int    `json:"value"`
-}
+func DefaultRules() map[string]int {
+	m := make(map[string]int)
 
-func NewGameRule(id int, name string, value int) *GameRule {
-	return &GameRule{
-		ID:    id,
-		Name:  name,
-		Value: value,
-	}
-}
+	m["winning_score"] = 120
+	m["see_dream_card"] = 1
+	m["show_capture"] = 1
 
-func DefaultRules() []GameRule {
-	return []GameRule{
-		*NewGameRule(1, "play_until", 120),
-		*NewGameRule(2, "see_dream_card", 1),
-	}
+	return m
 }

@@ -18,6 +18,7 @@ type Config struct {
 	DBAddress              string
 	DBName                 string
 	JWTSecret              string
+	DeckPath               string
 	JWTExpirationInSeconds int64
 }
 
@@ -30,12 +31,13 @@ func initConfig() Config {
 		Host:                   getEnv("HOST", "http://localhost"),
 		Port:                   getEnv("PORT", "8000"),
 		DBHost:                 getEnv("DB_HOST", "localhost"),
-		DBPort:                 getEnv("DB_PORT", "3307"),
+		DBPort:                 getEnv("DB_PORT", "3306"),
 		DBUser:                 getEnv("DB_USER", "root"),
 		DBPassword:             getEnv("DB_PASSWORD", "root"),
-		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "localhost"), getEnv("DB_PORT", "3307")),
-		DBName:                 getEnv("DB_DATABASE", "barbers"),
+		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "db"), getEnv("DB_PORT", "3306")),
+		DBName:                 getEnv("DB_DATABASE", "znk"),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
+		DeckPath:               getEnv("DECK_PATH", "assets/cards.json"),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXPIRATION_IN_SECONDS", 3600*24*7),
 	}
 }

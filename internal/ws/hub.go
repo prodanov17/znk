@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/prodanov17/znk/internal/game"
 )
 
 type Room struct {
-	game.Game
+	*game.Game
 	RoomID  string
 	Clients []*Client
 }
@@ -28,6 +29,7 @@ func (r *Room) RemoveClient(client *Client) {
 }
 
 type Hub struct {
+	sync.Mutex
 	Room       map[string]*Room   // _id:
 	Clients    map[string]*Client // client_id: client
 	Register   chan *Client
@@ -68,52 +70,102 @@ func (h *Hub) UnregisterClient(client *Client) {
 }
 
 func (h *Hub) BroadcastMessage(message *Message) {
+	fmt.Println("Broadcasting message", message.Action)
 	h.Broadcast <- message
 }
 
 func (h *Hub) registerClient(client *Client) {
-	log.Println("ID", client.RoomID)
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
+
+	log.Println("ID", client.ID)
+	_, ok := h.Clients[client.ID]
+	if ok {
+		log.Println("Client already registered")
+		return
+	}
 	if client.RoomID != "" {
 		room, ok := h.Room[client.RoomID]
 		if !ok {
-			h.Room[client.RoomID] = &Room{RoomID: client.RoomID, Game: *game.NewGame(client.RoomID, client.ID), Clients: []*Client{}}
+			h.Room[client.RoomID] = &Room{RoomID: client.RoomID, Game: game.NewGame(client.RoomID, client.ID), Clients: []*Client{}}
 			room = h.Room[client.RoomID]
+		}
+
+		if len(room.Clients) == 4 {
+			log.Println("Room is full")
+			message := &Message{Action: "room_full", Payload: nil, RoomID: client.RoomID, UserID: client.ID}
+			h.SendMessageToClient(message)
+			client.Disconnect()
+			return
 		}
 
 		room.AddClient(client)
 
-		player := game.Player{UserID: client.ID, Username: client.Username}
-		room.Game.AddPlayer(&player)
+		player, err := room.Game.Player(client.ID)
+		if err != nil { //not found
+			player = &game.Player{UserID: client.ID, Username: client.Username}
+			room.Game.AddPlayer(player)
+		}
 		fmt.Println("Player added to game", room.RoomID)
 
+		h.Clients[client.ID] = client
+
+		playerTeam := room.Game.PlayerTeam(client.ID)
+		if playerTeam == nil {
+			NotFound(h)
+			client.Disconnect()
+			return
+		}
+
+		var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": room.Game.GameTeam, "playerCount": len(room.Game.Players())}
+		rawPayload, _ := json.Marshal(playerPayload)
+
+		message := &Message{Action: "player_joined", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
+		fmt.Println("Registering client", h.Clients)
+		h.BroadcastMessage(message)
+		h.SendMessageToClient(message)
+	} else {
+		NotFound(h)
+		log.Println("Room ID is required")
+		client.Disconnect()
+		return
 	}
-
-	h.Clients[client.ID] = client
-
-	var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username}
-	rawPayload, _ := json.Marshal(playerPayload)
-
-	h.BroadcastMessage(&Message{Action: "player_joined", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID})
 }
 
 func (h *Hub) unregisterClient(client *Client) {
-	if client.RoomID != "" {
-		room, ok := h.Room[client.RoomID]
-		if !ok {
-			NotFound(h)
-			return
-		}
-		room.RemoveClient(client)
-		room.Game.RemovePlayer(client.ID)
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
+	if client.RoomID == "" {
+		log.Println("Room ID is required")
+		return
+	}
+	fmt.Println("Unregistering client", client.ID)
+
+	room, ok := h.Room[client.RoomID]
+	if !ok {
+		NotFound(h)
+		return
 	}
 
+	playerTeam := room.Game.PlayerTeam(client.ID)
+	if playerTeam == nil {
+		NotFound(h)
+		return
+	}
+
+	room.RemoveClient(client)
+	if room.Game.State != "started" {
+		room.Game.RemovePlayer(client.ID)
+	}
+	var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": room.Game.GameTeam, "playerCount": len(room.Game.Players())}
+	rawPayload, _ := json.Marshal(playerPayload)
+
+	h.Broadcast <- &Message{Action: "player_left", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
 	delete(h.Clients, client.ID)
-	h.Broadcast <- &Message{Action: "player_left", RoomID: client.RoomID, UserID: client.ID}
+
 }
 
 func (h *Hub) broadcastMessage(message *Message) {
-	fmt.Println("Broadcasting message", message.Action)
-	fmt.Println("Room", len(h.Room[message.RoomID].Clients))
 	if message.RoomID != "" {
 		room, ok := h.Room[message.RoomID]
 		if !ok {

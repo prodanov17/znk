@@ -23,6 +23,7 @@ func main() {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 	}
+	log.Printf(cfg.Addr)
 
 	db, err := database.NewMySQLStorage(cfg)
 	if err != nil {
@@ -40,6 +41,7 @@ func main() {
 		driver,
 	)
 	if err != nil {
+		log.Printf(cfg.Addr)
 		log.Fatal(err)
 	}
 

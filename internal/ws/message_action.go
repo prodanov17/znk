@@ -11,11 +11,11 @@ type MessageAction struct {
 }
 
 type MessagePayload struct {
-	Message string `json:"message"`
+	Message  string `json:"message"`
+	Username string `json:"username"`
 }
 
 func (a *MessageAction) Execute(hub *Hub) error {
-	fmt.Println("Received payload:", string(a.Payload))
 	var messagePayload MessagePayload // Create a variable to hold the unmarshalled payload
 
 	err := json.Unmarshal(a.Payload, &messagePayload) // Unmarshal into the variable
@@ -23,11 +23,19 @@ func (a *MessageAction) Execute(hub *Hub) error {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	fmt.Println("Unmarshalled payload:", messagePayload)
+	username := hub.Clients[a.UserID].Username
+	messagePayload.Username = username
+
+	if messagePayload.Message == "" {
+		return fmt.Errorf("message is empty")
+	}
 	rawPayload, err := json.Marshal(messagePayload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	hub.BroadcastMessage(&Message{Action: "message", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID})
+
+	message := &Message{Action: "message", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	hub.BroadcastMessage(message)
+	hub.SendMessageToClient(message)
 	return nil
 }

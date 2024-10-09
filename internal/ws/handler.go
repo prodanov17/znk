@@ -44,7 +44,7 @@ func (h *Handler) JoinLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lobbyID == "" || lobbyID != "1234" {
+	if lobbyID == "" {
 		utils.WriteError(w, r, http.StatusBadRequest, fmt.Errorf("missing or invalid lobbyID"))
 		return
 	}
@@ -62,10 +62,10 @@ func (h *Handler) JoinLobby(w http.ResponseWriter, r *http.Request) {
 		Username: username,
 		RoomID:   lobbyID,
 	}
-	fmt.Println("Registering client")
+	fmt.Println("Registering client", cl.ID, cl.Username, cl.RoomID)
 
 	h.hub.RegisterClient(cl)
 
-	go cl.WriteMessage()
+	go cl.WriteMessage(h.hub)
 	cl.ReadMessage(h.hub)
 }

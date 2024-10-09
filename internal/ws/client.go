@@ -16,9 +16,9 @@ type Client struct {
 	RoomID   string `json:"room_id"`
 }
 
-func (c *Client) WriteMessage() {
+func (c *Client) WriteMessage(hub *Hub) {
 	defer func() {
-		c.Conn.Close()
+		c.Disconnect()
 	}()
 
 	for {
@@ -34,6 +34,8 @@ func (c *Client) WriteMessage() {
 			err := c.Conn.WriteJSON(message)
 			if err != nil {
 				log.Println("Error writing message:", err)
+				hub.UnregisterClient(c)
+
 				return
 			}
 		}
@@ -43,7 +45,7 @@ func (c *Client) WriteMessage() {
 func (c *Client) ReadMessage(hub *Hub) {
 	defer func() {
 		hub.UnregisterClient(c)
-		c.Conn.Close()
+		c.Disconnect()
 	}()
 
 	for {
@@ -54,6 +56,7 @@ func (c *Client) ReadMessage(hub *Hub) {
 			}
 			break
 		}
+		fmt.Println("Received message: ", string(m[:]))
 
 		msg := &Message{}
 		err = json.Unmarshal(m, msg)
@@ -62,6 +65,8 @@ func (c *Client) ReadMessage(hub *Hub) {
 			continue
 		}
 
+		log.Printf("received message: %v", msg.Action)
+
 		if err := handleMessage(hub, msg); err != nil {
 			errorPayload, _ := json.Marshal(map[string]string{"error": err.Error()})
 			hub.SendMessageToClient(&Message{Action: "error", Payload: errorPayload, UserID: c.ID})
@@ -69,7 +74,6 @@ func (c *Client) ReadMessage(hub *Hub) {
 			continue
 		}
 
-		fmt.Println("message", msg)
 	}
 }
 
@@ -85,4 +89,8 @@ func handleMessage(hub *Hub, msg *Message) error {
 	}
 
 	return action.Execute(hub)
+}
+
+func (c *Client) Disconnect() {
+	c.Conn.Close()
 }

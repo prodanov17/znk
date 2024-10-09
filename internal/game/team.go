@@ -1,10 +1,11 @@
 package game
 
 type GameTeam struct {
-	ID      int    `json:"team_id"`
-	GameID  string `json:"game_id"`
-	Score   int    `json:"score"`
-	Players []*Player
+	ID            int       `json:"team_id"`
+	GameID        string    `json:"game_id"`
+	Score         int       `json:"score"`
+	Players       []*Player `json:"players"`
+	CapturedCards []Card    `json:"captured_cards"`
 }
 
 func NewGameTeam(id int, gameID string) *GameTeam {
@@ -26,4 +27,16 @@ func (gt *GameTeam) RemovePlayer(p *Player) {
 			break
 		}
 	}
+}
+
+func (gt *GameTeam) UpdateScore(score int) {
+	gt.Score += score
+}
+
+func (gt *GameTeam) CaptureCards(cards []Card) {
+	gt.CapturedCards = append(gt.CapturedCards, cards...)
+}
+
+func (gt *GameTeam) ResetCapturedCards() {
+	gt.CapturedCards = []Card{}
 }

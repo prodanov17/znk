@@ -41,6 +41,7 @@ func (s *APIServer) Run() error {
 	stack := middleware.CreateStack(
 		middleware.StripSlashes,
 		middleware.Logging,
+		middleware.CORS,
 	)
 
 	log.Println("Starting server on", s.addr)
