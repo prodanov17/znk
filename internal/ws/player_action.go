@@ -108,7 +108,7 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 				return fmt.Errorf("failed to get dealer: %w", err)
 			}
 
-			roundOverPayload := map[string]interface{}{"dealer_id": dealer.UserID, "teams": game.GameTeam}
+			roundOverPayload := map[string]interface{}{"dealer_id": dealer.UserID, "teams": game.GameTeam, "last_capture_id": game.LastCapture().ID}
 			rawPayload, err := json.Marshal(roundOverPayload)
 			if err != nil {
 				return err

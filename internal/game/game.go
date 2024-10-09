@@ -224,8 +224,8 @@ func (g *Game) EndRound() (*GameTeam, error) {
 	g.GameState.TurnIdx = g.GameState.DealerIdx + 1
 
 	tableValue := g.Table.TotalValue()
-	g.GameTeam[0].UpdateScore(tableValue) // TODO: update score for the team that took last
-	g.GameTeam[0].CaptureCards(g.Table.Cards)
+	g.LastCapture().UpdateScore(tableValue)
+	g.LastCapture().CaptureCards(g.Table.Cards)
 
 	if len(g.GameTeam[0].CapturedCards) > len(g.GameTeam[1].CapturedCards) {
 		g.GameTeam[0].UpdateScore(4)
@@ -337,6 +337,27 @@ func (g *Game) ChangeTeam(playerID string) error {
 	}
 
 	return nil
+}
+
+func (g *Game) LastCapture() *GameTeam {
+	dealer, err := g.GameState.Dealer(g.GameTeam)
+	if err != nil {
+		return &g.GameTeam[0]
+	}
+
+	dealerTeam := g.PlayerTeam(dealer.UserID)
+
+	if len(g.Table.Cards)%2 == 0 {
+		return dealerTeam
+	}
+
+	for i := range g.GameTeam {
+		if &g.GameTeam[i] != dealerTeam {
+			return &g.GameTeam[i]
+		}
+	}
+
+	return &g.GameTeam[0]
 }
 
 func (g *Game) checkCapture() int {
