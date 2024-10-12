@@ -25,16 +25,16 @@ type Config struct {
 var Env = initConfig()
 
 func initConfig() Config {
-	godotenv.Load()
+	godotenv.Load(".env")
 
 	return Config{
 		Host:                   getEnv("HOST", "http://localhost"),
 		Port:                   getEnv("PORT", "8000"),
-		DBHost:                 getEnv("DB_HOST", "localhost"),
-		DBPort:                 getEnv("DB_PORT", "3306"),
-		DBUser:                 getEnv("DB_USER", "root"),
-		DBPassword:             getEnv("DB_PASSWORD", "root"),
-		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "db"), getEnv("DB_PORT", "3306")),
+		DBHost:                 getEnv("DB_HOST", "host.docker.internal"),
+		DBPort:                 getEnv("DB_PORT", "5432"),
+		DBUser:                 getEnv("DB_USER", "postgres"),
+		DBPassword:             getEnv("DB_PASSWORD", "postgres123"),
+		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "host.docker.internal"), getEnv("DB_PORT", "5432")),
 		DBName:                 getEnv("DB_DATABASE", "znk"),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
 		DeckPath:               getEnv("DECK_PATH", "assets/cards.json"),

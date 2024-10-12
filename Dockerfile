@@ -8,15 +8,18 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-RUN go build -v -o /usr/local/bin/migrate ./cmd/migrate/main.go
+# RUN go build -v -o /usr/local/bin/migrate ./cmd/migrate/main.go
 
 RUN go build -v -o /usr/local/bin/app ./cmd/main.go
 
+RUN apt-get update && apt-get install -y iputils-ping
+
+
 EXPOSE 8000
 
-ENV PORT=8000
-ENV DB_HOST=db
-ENV DB_PORT=3306
+# ENV PORT=8000
+# ENV DB_HOST=127.0.0.1
+# ENV DB_PORT=3306
 ENV DECK_PATH=/assets/cards.json
 
 

@@ -1,60 +1,59 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"os"
 
-	mysqlDriver "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/mysql"
-	mysqlMigrate "github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/prodanov17/znk/internal/config"
-	"github.com/prodanov17/znk/internal/database"
 )
 
 func main() {
-	cfg := mysqlDriver.Config{
-		User:                 config.Env.DBUser,
-		Passwd:               config.Env.DBPassword,
-		Net:                  "tcp",
-		Addr:                 config.Env.DBAddress,
-		DBName:               config.Env.DBName,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-	}
-	log.Printf(cfg.Addr)
+	// Set up PostgreSQL connection string (DSN)
+	dsn := "postgres://" + config.Env.DBUser + ":" + config.Env.DBPassword +
+		"@" + config.Env.DBAddress + "/" + config.Env.DBName + "?sslmode=disable"
 
-	db, err := database.NewMySQLStorage(cfg)
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	// Ensure the database connection works
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+	// Set up the PostgreSQL migration driver
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	driver, err := mysql.WithInstance(db, &mysqlMigrate.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	// Initialize the migration instance
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://cmd/migrate/migrations",
-		"mysql",
+		"file://cmd/migrate/migrations", // Path to your migration files
+		"znk",                           // Database name (PostgreSQL)
 		driver,
 	)
 	if err != nil {
-		log.Printf(cfg.Addr)
 		log.Fatal(err)
 	}
 
+	// Get the current migration version
 	v, d, _ := m.Version()
 	log.Printf("Current version: %v, dirty: %v", v, d)
 
+	// Handle migration commands (up/down)
+	log.Println(os.Args)
 	cmd := os.Args[len(os.Args)-1]
 	if cmd == "up" {
 		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 			log.Fatal(err)
 		}
-	}
-	if cmd == "down" {
+	} else if cmd == "down" {
 		if err := m.Down(); err != nil && err != migrate.ErrNoChange {
 			log.Fatal(err)
 		}
