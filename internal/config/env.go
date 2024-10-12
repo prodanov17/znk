@@ -33,7 +33,7 @@ func initConfig() Config {
 		DBHost:                 getEnv("DB_HOST", "host.docker.internal"),
 		DBPort:                 getEnv("DB_PORT", "5432"),
 		DBUser:                 getEnv("DB_USER", "postgres"),
-		DBPassword:             getEnv("DB_PASSWORD", "postgres123"),
+		DBPassword:             getEnv("DB_PASSWORD", ""),
 		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "host.docker.internal"), getEnv("DB_PORT", "5432")),
 		DBName:                 getEnv("DB_DATABASE", "znk"),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
