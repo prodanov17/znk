@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/prodanov17/znk/internal/game"
 )
 
 type Room struct {
-	*game.Game
-	RoomID  string
-	Clients []*Client
+	*game.Game `json:"game"`
+	RoomID     string    `json:"room_id"`
+	Clients    []*Client `json:"clients"`
+	CreatedAt  time.Time `json:"created_at"`
+	CreatedBy  string    `json:"created_by"`
 }
 
 func (r *Room) AddClient(client *Client) {
@@ -26,6 +29,22 @@ func (r *Room) RemoveClient(client *Client) {
 			break
 		}
 	}
+}
+
+func (h *Hub) ClearRoom(roomID string) error {
+	room, ok := h.Room[roomID]
+	if !ok {
+		return fmt.Errorf("room not found")
+	}
+
+	for _, client := range room.Clients {
+		h.UnregisterClient(client)
+	}
+
+	delete(h.Room, roomID)
+
+	return nil
+
 }
 
 type Hub struct {
@@ -87,7 +106,7 @@ func (h *Hub) registerClient(client *Client) {
 	if client.RoomID != "" {
 		room, ok := h.Room[client.RoomID]
 		if !ok {
-			h.Room[client.RoomID] = &Room{RoomID: client.RoomID, Game: game.NewGame(client.RoomID, client.ID), Clients: []*Client{}}
+			h.Room[client.RoomID] = &Room{RoomID: client.RoomID, Game: game.NewGame(client.RoomID, client.ID), Clients: []*Client{}, CreatedAt: time.Now(), CreatedBy: client.Username}
 			room = h.Room[client.RoomID]
 		}
 

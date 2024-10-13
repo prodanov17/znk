@@ -9,11 +9,11 @@ import (
 )
 
 type Client struct {
-	Conn     *websocket.Conn
-	Message  chan *Message
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	RoomID   string `json:"room_id"`
+	Conn     *websocket.Conn `json:"-"`
+	Message  chan *Message   `json:"-"`
+	ID       string          `json:"id"`
+	Username string          `json:"username"`
+	RoomID   string          `json:"room_id"`
 }
 
 func (c *Client) WriteMessage(hub *Hub) {

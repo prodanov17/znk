@@ -27,13 +27,14 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) RegisterRoutes(router *http.ServeMux) {
-	router.HandleFunc("/ws/join/{lobbyID}", h.JoinLobby)
+	router.HandleFunc("/ws/join/{lobbyID}", h.handleJoinLobby)
+	router.HandleFunc("/ws/rooms", h.handleGetRooms)
+	router.HandleFunc("/ws/clients", h.handleGetClients)
+	router.HandleFunc("POST /ws/rooms/{room_id}/clear", h.handleClearRoom)
 }
 
-func (h *Handler) JoinLobby(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 	//authenticate user
-
-	fmt.Println("Joining lobby")
 
 	lobbyID := r.PathValue("lobbyID")
 	clientID := r.URL.Query().Get("userId")
@@ -68,4 +69,41 @@ func (h *Handler) JoinLobby(w http.ResponseWriter, r *http.Request) {
 
 	go cl.WriteMessage(h.hub)
 	cl.ReadMessage(h.hub)
+}
+
+func (h *Handler) handleGetRooms(w http.ResponseWriter, r *http.Request) {
+	//authenticate user
+
+	rooms := make([]*Room, 0)
+
+	for _, room := range h.hub.Room {
+		rooms = append(rooms, room)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, rooms)
+}
+
+func (h *Handler) handleGetClients(w http.ResponseWriter, _ *http.Request) {
+	//authenticate user
+
+	clients := make([]*Client, 0)
+
+	for _, client := range h.hub.Clients {
+		clients = append(clients, client)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, clients)
+}
+
+func (h *Handler) handleClearRoom(w http.ResponseWriter, r *http.Request) {
+	//authenticate user
+	roomID := r.PathValue("room_id")
+
+	err := h.hub.ClearRoom(roomID)
+	if err != nil {
+		utils.WriteError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, "Rooms cleared")
 }

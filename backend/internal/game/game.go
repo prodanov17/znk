@@ -9,15 +9,15 @@ import (
 
 type Game struct {
 	sync.Mutex
-	ID        string `json:"id"`
-	OwnerID   string `json:"owner_id"`
-	CreatedAt string `json:"created_at"`
-	State     string `json:"state"`
-	GameTeam  []GameTeam
-	Deck      *Deck
-	GameState *GameState
-	Rules     map[string]int
-	Table     *Table
+	ID        string         `json:"id"`
+	OwnerID   string         `json:"owner_id"`
+	CreatedAt string         `json:"created_at"`
+	State     string         `json:"state"`
+	GameTeam  []GameTeam     `json:"-"`
+	Deck      *Deck          `json:"-"`
+	GameState *GameState     `json:"-"`
+	Rules     map[string]int `json:"-"`
+	Table     *Table         `json:"-"`
 }
 
 func NewGame(id, ownerID string) *Game {

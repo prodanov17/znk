@@ -13,12 +13,12 @@ services:
       - znk-network
   backend:
     build:
-      context: .  # Path to your Dockerfile for Go
+      context: ./backend  # Path to your Dockerfile for Go
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - .env
+    env_file:
+      - ./backend/.env
     restart: always
     networks:
       - znk-network
@@ -27,7 +27,7 @@ services:
     command: go run ./cmd/main.go
   frontend:
     build:
-      context: ../znk-ui  # Path to your React app Dockerfile
+      context: ./web-ui  # Path to your React app Dockerfile
       dockerfile: Dockerfile
     ports:
       - "5001:80"  # Map port 5173 on host to port 80 in the container
