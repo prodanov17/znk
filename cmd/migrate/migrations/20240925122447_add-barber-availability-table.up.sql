@@ -1,9 +1,0 @@
-CREATE TABLE IF NOT EXISTS barber_availabilities (
-    barber_id INT PRIMARY KEY,
-    FOREIGN KEY (barber_id) REFERENCES barbers(user_id),
-    day_of_week ENUM('SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY') NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);

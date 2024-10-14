@@ -1,0 +1,50 @@
+services:
+  database:
+    image: postgres:latest
+    ports: 
+      - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes: 
+      - pg_data:/var/lib/postgresql/database
+      - ./dbshell:/docker-entrypoint-initdb.d/
+    networks:
+      - znk-network
+  backend:
+    build:
+      context: ./backend  # Path to your Dockerfile for Go
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    restart: always
+    networks:
+      - znk-network
+    depends_on:
+      - database  # Ensure the database starts before the backend
+    command: go run ./cmd/main.go
+  frontend:
+    build:
+      context: ./web-ui  # Path to your React app Dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - "5001:80"  # Map port 5173 on host to port 80 in the container
+    depends_on:
+      - backend  # Ensure the backend starts before the frontend
+    environment:
+      VITE_API_URL: http://backend:8000
+      VITE_WS_URL: ws://backend:8000
+    networks:
+      - znk-network
+
+networks:
+  znk-network:
+    driver: bridge
+  
+
+volumes:
+  pg_data:
+
+
