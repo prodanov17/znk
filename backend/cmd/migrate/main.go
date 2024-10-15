@@ -10,6 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/prodanov17/znk/internal/config"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 func main() {
@@ -47,7 +48,7 @@ func main() {
 	log.Printf("Current version: %v, dirty: %v", v, d)
 
 	// Handle migration commands (up/down)
-	log.Println(os.Args)
+	logger.Log.Info(os.Args)
 	cmd := os.Args[len(os.Args)-1]
 	if cmd == "up" {
 		if err := m.Up(); err != nil && err != migrate.ErrNoChange {

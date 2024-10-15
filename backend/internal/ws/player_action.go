@@ -36,17 +36,16 @@ type ThrowCardResponse struct {
 	NextTurn         string         `json:"next_turn_id"`
 }
 
-func (a *ThrowCardAction) Execute(hub *Hub) error {
+func (a *ThrowCardAction) Execute() error {
 	var throwCardPayload ThrowCardPayload
 	err := json.Unmarshal(a.Payload, &throwCardPayload)
 	if err != nil {
 		return err
 	}
 
-	game := hub.Room[a.RoomID].Game
+	game := a.Hub.Room[a.RoomID].Game
 
 	value, err := game.PlayCard(a.UserID, throwCardPayload.CardID)
-	fmt.Println("value", value)
 	if err != nil {
 		return err
 	}
@@ -60,7 +59,7 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 			TakeCards:        value != -1,
 			Value:            value,
 			UserID:           a.UserID,
-			Username:         hub.Clients[a.UserID].Username,
+			Username:         a.Hub.Clients[a.UserID].Username,
 			RoomID:           a.RoomID,
 			TableCards:       game.TableCards(),
 			TableValue:       game.Table.TotalValue(),
@@ -76,11 +75,10 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 		}
 
 		message := &Message{Action: "card_played", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID}
-		hub.SendMessageToClient(message)
+		a.Hub.SendMessageToClient(message)
 	}
 
 	if game.RoundOver() {
-		fmt.Println("Round over")
 		winner, err := game.EndRound()
 		if err != nil {
 			return err
@@ -98,8 +96,8 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 			}
 
 			message := &Message{Action: "game_ended", Payload: rawPayload, RoomID: a.RoomID}
-			hub.BroadcastMessage(message)
-			hub.SendMessageToClient(message)
+			a.Hub.BroadcastMessage(message)
+			a.Hub.SendMessageToClient(message)
 			return nil
 		} else {
 
@@ -114,12 +112,10 @@ func (a *ThrowCardAction) Execute(hub *Hub) error {
 				return err
 			}
 			message := &Message{Action: "round_over", Payload: rawPayload, RoomID: a.RoomID, UserID: "0"}
-			hub.BroadcastMessage(message)
+			a.Hub.BroadcastMessage(message)
 
 		}
 	}
-
-	fmt.Println("Next turn:", nextTurn.UserID)
 
 	return nil
 }

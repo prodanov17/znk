@@ -3,11 +3,11 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Room struct {
@@ -42,6 +42,8 @@ func (h *Hub) ClearRoom(roomID string) error {
 	}
 
 	delete(h.Room, roomID)
+
+	logger.Log.Info("Room cleared", roomID)
 
 	return nil
 
@@ -89,7 +91,6 @@ func (h *Hub) UnregisterClient(client *Client) {
 }
 
 func (h *Hub) BroadcastMessage(message *Message) {
-	fmt.Println("Broadcasting message", message.Action)
 	h.Broadcast <- message
 }
 
@@ -97,10 +98,8 @@ func (h *Hub) registerClient(client *Client) {
 	h.Mutex.Lock()
 	defer h.Mutex.Unlock()
 
-	log.Println("ID", client.ID)
 	_, ok := h.Clients[client.ID]
 	if ok {
-		log.Println("Client already registered")
 		return
 	}
 	if client.RoomID != "" {
@@ -111,7 +110,6 @@ func (h *Hub) registerClient(client *Client) {
 		}
 
 		if len(room.Clients) == 4 {
-			log.Println("Room is full")
 			message := &Message{Action: "room_full", Payload: nil, RoomID: client.RoomID, UserID: client.ID}
 			h.SendMessageToClient(message)
 			client.Disconnect()
@@ -125,7 +123,8 @@ func (h *Hub) registerClient(client *Client) {
 			player = &game.Player{UserID: client.ID, Username: client.Username}
 			room.Game.AddPlayer(player)
 		}
-		fmt.Println("Player added to game", room.RoomID)
+
+		logger.Log.Infof("Player %s joined room %s", client.Username, client.RoomID)
 
 		h.Clients[client.ID] = client
 
@@ -140,12 +139,10 @@ func (h *Hub) registerClient(client *Client) {
 		rawPayload, _ := json.Marshal(playerPayload)
 
 		message := &Message{Action: "player_joined", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
-		fmt.Println("Registering client", h.Clients)
 		h.BroadcastMessage(message)
 		h.SendMessageToClient(message)
 	} else {
 		NotFound(h)
-		log.Println("Room ID is required")
 		client.Disconnect()
 		return
 	}
@@ -155,10 +152,9 @@ func (h *Hub) unregisterClient(client *Client) {
 	h.Mutex.Lock()
 	defer h.Mutex.Unlock()
 	if client.RoomID == "" {
-		log.Println("Room ID is required")
 		return
 	}
-	fmt.Println("Unregistering client", client.ID)
+	logger.Log.Infof("Player %s left room %s", client.Username, client.RoomID)
 
 	room, ok := h.Room[client.RoomID]
 	if !ok {
@@ -203,7 +199,7 @@ func (h *Hub) broadcastMessage(message *Message) {
 			client.Message <- message
 		}
 	} else {
-		log.Println("Broadcasting message to all clients")
+		logger.Log.Info("Broadcasting message to all clients")
 		for _, client := range h.Clients {
 			if client.ID == message.UserID {
 				continue

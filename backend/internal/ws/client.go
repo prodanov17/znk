@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Client struct {
@@ -61,16 +62,16 @@ func (c *Client) ReadMessage(hub *Hub) {
 		msg := &Message{}
 		err = json.Unmarshal(m, msg)
 		if err != nil {
-			log.Printf("error unmarshaling: %v", err)
+			fmt.Printf("error unmarshaling: %v", err)
 			continue
 		}
 
-		log.Printf("received message: %v", msg.Action)
+		logger.Log.Infof("Received message: %v", msg)
 
 		if err := handleMessage(hub, msg); err != nil {
 			errorPayload, _ := json.Marshal(map[string]string{"error": err.Error()})
 			hub.SendMessageToClient(&Message{Action: "error", Payload: errorPayload, UserID: c.ID})
-			log.Printf("error handling message: %v", err)
+			fmt.Printf("error handling message: %v", err)
 			continue
 		}
 
@@ -78,7 +79,7 @@ func (c *Client) ReadMessage(hub *Hub) {
 }
 
 func handleMessage(hub *Hub, msg *Message) error {
-	action, err := CreateAction(msg.Action, msg.RoomID, msg.UserID, msg.Payload)
+	action, err := CreateAction(msg, hub)
 	if err != nil {
 		return fmt.Errorf("error creating action: %v", err)
 	}
@@ -88,9 +89,10 @@ func handleMessage(hub *Hub, msg *Message) error {
 		return fmt.Errorf("error unmarshalling payload: %v", err)
 	}
 
-	return action.Execute(hub)
+	return action.Execute()
 }
 
 func (c *Client) Disconnect() {
 	c.Conn.Close()
+	logger.Log.Info("Client disconnected", c.Username)
 }

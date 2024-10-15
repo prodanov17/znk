@@ -1,91 +1,86 @@
 package ws
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
 type Action interface {
-	Execute(hub *Hub) error
+	Execute() error
 }
 
 type BaseAction struct {
+	Hub    *Hub
 	UserID string
 	RoomID string
 }
 
-func (a *BaseAction) Execute(hub *Hub) error {
+func (a *BaseAction) Execute() error {
 	return nil
 }
 
-func NewBaseAction(userID, roomID string) BaseAction {
+func NewBaseAction(hub *Hub, userID, roomID string) BaseAction {
 	return BaseAction{
+		Hub:    hub,
 		UserID: userID,
 		RoomID: roomID,
 	}
 }
 
-var Actions = map[string]func(userID, roomID string, payload json.RawMessage) Action{
-	"example": func(userID, roomID string, payload json.RawMessage) Action {
-		return &ExampleAction{BaseAction: BaseAction{
-			UserID: userID,
-			RoomID: roomID,
-		}}
-	},
-	"message": func(userID, roomID string, payload json.RawMessage) Action {
+var Actions = map[string]func(message *Message, hub *Hub) Action{
+	"message": func(message *Message, hub *Hub) Action {
 		return &MessageAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"deal_cards": func(userID, roomID string, payload json.RawMessage) Action {
+	"deal_cards": func(message *Message, hub *Hub) Action {
 		return &DealCardsAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"throw_card": func(userID, roomID string, payload json.RawMessage) Action {
+	"throw_card": func(message *Message, hub *Hub) Action {
 		return &ThrowCardAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"start_game": func(userID, roomID string, payload json.RawMessage) Action {
+	"start_game": func(message *Message, hub *Hub) Action {
 		return &StartGameAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"change_team": func(userID, roomID string, payload json.RawMessage) Action {
+	"change_team": func(message *Message, hub *Hub) Action {
 		return &ChangeTeamAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"get_teams": func(userID, roomID string, payload json.RawMessage) Action {
+	"get_teams": func(message *Message, hub *Hub) Action {
 		return &GetTeamsAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"game_state": func(userID, roomID string, payload json.RawMessage) Action {
+	"game_state": func(message *Message, hub *Hub) Action {
 		return &GetGameStateAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
-	"get_dealer": func(userID, roomID string, payload json.RawMessage) Action {
+	"get_dealer": func(message *Message, hub *Hub) Action {
 		return &GetDealerAction{
-			BaseAction: NewBaseAction(userID, roomID),
-			Payload:    payload,
+			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
+			Payload:    message.Payload,
 		}
 	},
 }
 
-func CreateAction(actionType, gameID, userID string, payload json.RawMessage) (Action, error) {
-	constructor, ok := Actions[actionType]
+func CreateAction(message *Message, hub *Hub) (Action, error) {
+	constructor, ok := Actions[message.Action]
 	if !ok {
-		return nil, fmt.Errorf("action type %s not found", actionType)
+		return nil, fmt.Errorf("action type %s not found", message.Action)
 	}
-	return constructor(userID, gameID, payload), nil
+	return constructor(message, hub), nil
 }

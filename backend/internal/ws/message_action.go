@@ -15,7 +15,7 @@ type MessagePayload struct {
 	Username string `json:"username"`
 }
 
-func (a *MessageAction) Execute(hub *Hub) error {
+func (a *MessageAction) Execute() error {
 	var messagePayload MessagePayload // Create a variable to hold the unmarshalled payload
 
 	err := json.Unmarshal(a.Payload, &messagePayload) // Unmarshal into the variable
@@ -23,7 +23,7 @@ func (a *MessageAction) Execute(hub *Hub) error {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	username := hub.Clients[a.UserID].Username
+	username := a.Hub.Clients[a.UserID].Username
 	messagePayload.Username = username
 
 	if messagePayload.Message == "" {
@@ -35,7 +35,7 @@ func (a *MessageAction) Execute(hub *Hub) error {
 	}
 
 	message := &Message{Action: "message", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
-	hub.BroadcastMessage(message)
-	hub.SendMessageToClient(message)
+	a.Hub.BroadcastMessage(message)
+	a.Hub.SendMessageToClient(message)
 	return nil
 }

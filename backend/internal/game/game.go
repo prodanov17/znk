@@ -2,9 +2,10 @@ package game
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
+
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Game struct {
@@ -73,7 +74,7 @@ func (g *Game) RemovePlayer(playerID string) error {
 		}
 	}
 
-	return fmt.Errorf("Player not found")
+	return fmt.Errorf("Player not found") //rejoining with the same id creates a bug
 }
 
 func (g *Game) StartGame() error {
@@ -275,7 +276,7 @@ func (g *Game) IsPlayerTurn(playerID string) bool {
 	turn, err := g.GameState.NextTurn(g.GameTeam)
 
 	if err != nil {
-		log.Println("Error getting next turn:", err)
+		logger.Log.Info("Error getting next turn:", err)
 		return false
 	}
 

@@ -3,11 +3,11 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type StartGameAction struct {
@@ -19,8 +19,8 @@ type StartGamePayload struct {
 	Rules map[string]string `json:"rules"`
 }
 
-func (a *StartGameAction) Execute(hub *Hub) error {
-	game := hub.Room[a.RoomID].Game
+func (a *StartGameAction) Execute() error {
+	game := a.Hub.Room[a.RoomID].Game
 
 	fmt.Println("gamerule", game.Rules)
 	err := game.StartGame()
@@ -32,11 +32,11 @@ func (a *StartGameAction) Execute(hub *Hub) error {
 
 	err = json.Unmarshal(a.Payload, &startGamePayload)
 	if err != nil {
-		log.Println("Failed to unmarshal payload. Using default rules")
+		logger.Log.Warn("Failed to unmarshal payload. Using default rules")
+		return err
 	}
 
 	for key, value := range startGamePayload.Rules {
-		fmt.Println("key", key, "value", value)
 		intValue, err := strconv.Atoi(strings.TrimSpace(value))
 		if err != nil {
 			continue
@@ -44,7 +44,6 @@ func (a *StartGameAction) Execute(hub *Hub) error {
 		game.UpdateRule(key, intValue)
 	}
 
-	fmt.Println("gamerule", game.Rules)
 	dealer, err := game.GameState.Dealer(game.GameTeam)
 	if err != nil {
 		return err
@@ -57,8 +56,8 @@ func (a *StartGameAction) Execute(hub *Hub) error {
 	}
 
 	message := &Message{Action: "game_started", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
-	hub.BroadcastMessage(message)
-	hub.SendMessageToClient(message)
+	a.Hub.BroadcastMessage(message)
+	a.Hub.SendMessageToClient(message)
 
 	return nil
 }
@@ -68,8 +67,8 @@ type ChangeTeamAction struct {
 	Payload json.RawMessage
 }
 
-func (a *ChangeTeamAction) Execute(hub *Hub) error {
-	game := hub.Room[a.RoomID].Game
+func (a *ChangeTeamAction) Execute() error {
+	game := a.Hub.Room[a.RoomID].Game
 
 	err := game.ChangeTeam(a.UserID)
 	if err != nil {
@@ -84,8 +83,8 @@ func (a *ChangeTeamAction) Execute(hub *Hub) error {
 	rawPayload, _ := json.Marshal(playerPayload)
 
 	message := &Message{Action: "team_changed", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
-	hub.BroadcastMessage(message)
-	hub.SendMessageToClient(message)
+	a.Hub.BroadcastMessage(message)
+	a.Hub.SendMessageToClient(message)
 
 	return nil
 }
@@ -95,15 +94,15 @@ type GetTeamsAction struct {
 	Payload json.RawMessage
 }
 
-func (a *GetTeamsAction) Execute(hub *Hub) error {
-	game := hub.Room[a.RoomID].Game
+func (a *GetTeamsAction) Execute() error {
+	game := a.Hub.Room[a.RoomID].Game
 
 	teams := game.GameTeam
 	var teamPayload = map[string]interface{}{"teams": teams}
 	rawPayload, _ := json.Marshal(teamPayload)
 
 	message := &Message{Action: "teams", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
-	hub.SendMessageToClient(message)
+	a.Hub.SendMessageToClient(message)
 
 	return nil
 }
@@ -113,8 +112,8 @@ type GetDealerAction struct {
 	Payload json.RawMessage
 }
 
-func (a *GetDealerAction) Execute(hub *Hub) error {
-	game := hub.Room[a.RoomID].Game
+func (a *GetDealerAction) Execute() error {
+	game := a.Hub.Room[a.RoomID].Game
 
 	dealer, err := game.GameState.Dealer(game.GameTeam)
 	if err != nil {
@@ -125,7 +124,7 @@ func (a *GetDealerAction) Execute(hub *Hub) error {
 	rawPayload, _ := json.Marshal(dealerPayload)
 
 	message := &Message{Action: "dealer", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
-	hub.SendMessageToClient(message)
+	a.Hub.SendMessageToClient(message)
 
 	return nil
 }
@@ -149,8 +148,8 @@ type GameStatePayload struct {
 	GameInfo         map[string]int  `json:"game_info"`
 }
 
-func (a *GetGameStateAction) Execute(hub *Hub) error {
-	game := hub.Room[a.RoomID].Game
+func (a *GetGameStateAction) Execute() error {
+	game := a.Hub.Room[a.RoomID].Game
 
 	nextTurn, _ := game.GameState.NextTurn(game.GameTeam)
 	dealer, _ := game.GameState.Dealer(game.GameTeam)
@@ -176,7 +175,7 @@ func (a *GetGameStateAction) Execute(hub *Hub) error {
 				return fmt.Errorf("failed to marshal payload: %w", err)
 			}
 
-			hub.SendMessageToClient(&Message{Action: "game_state", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
+			a.Hub.SendMessageToClient(&Message{Action: "game_state", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
 
 		}
 

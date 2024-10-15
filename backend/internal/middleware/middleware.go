@@ -3,12 +3,12 @@ package middleware
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/prodanov17/znk/internal/utils"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -27,7 +27,7 @@ func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		log.Println(r.Method, r.URL.Path, time.Since(start))
+		logger.Log.Info(r.Method, r.URL.Path, time.Since(start))
 	})
 }
 

@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Host                   string
 	Port                   string
+	Env                    string
 	DBHost                 string
 	DBPort                 string
 	DBUser                 string
@@ -30,6 +31,7 @@ func initConfig() Config {
 	return Config{
 		Host:                   getEnv("HOST", "http://localhost"),
 		Port:                   getEnv("PORT", "8000"),
+		Env:                    getEnv("ENV", "dev"),
 		DBHost:                 getEnv("DB_HOST", "host.docker.internal"),
 		DBPort:                 getEnv("DB_PORT", "5432"),
 		DBUser:                 getEnv("DB_USER", "postgres"),

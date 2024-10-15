@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/prodanov17/znk/internal/utils"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Handler struct {
@@ -36,7 +37,7 @@ func (h *Handler) RegisterRoutes(router *http.ServeMux) {
 func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 	//authenticate user
 
-	lobbyID := r.PathValue("lobbyID")
+	roomID := r.PathValue("lobbyID")
 	clientID := r.URL.Query().Get("userId")
 	username := r.URL.Query().Get("username")
 
@@ -45,7 +46,7 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if lobbyID == "" {
+	if roomID == "" {
 		utils.WriteError(w, r, http.StatusBadRequest, fmt.Errorf("missing or invalid lobbyID"))
 		return
 	}
@@ -61,9 +62,10 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 		Message:  make(chan *Message, 10),
 		ID:       clientID,
 		Username: username,
-		RoomID:   lobbyID,
+		RoomID:   roomID,
 	}
-	fmt.Println("Registering client", cl.ID, cl.Username, cl.RoomID)
+
+	logger.Log.Infof("Client %s joined room %s | IP Addr: %s", cl.ID, cl.RoomID, r.RemoteAddr)
 
 	h.hub.RegisterClient(cl)
 
@@ -104,6 +106,8 @@ func (h *Handler) handleClearRoom(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+
+	logger.Log.Infof("Room %s cleared by %s", roomID, r.RemoteAddr)
 
 	utils.WriteJSON(w, http.StatusOK, "Rooms cleared")
 }

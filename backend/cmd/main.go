@@ -24,7 +24,7 @@ func main() {
 	})
 
 	if err != nil {
-		// log.Fatal(err)
+		log.Fatal(err)
 	}
 
 	initStorage(db)
@@ -37,8 +37,8 @@ func main() {
 func initStorage(db *sql.DB) {
 	err := db.Ping()
 	if err != nil {
-		// log.Fatal(err)
+		log.Fatal(err)
 	}
 
-	log.Println("DB: Successfully connected!")
+	fmt.Println("DB: Successfully connected!")
 }

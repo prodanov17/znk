@@ -21,11 +21,11 @@ type DealCardsPayload struct {
 	DreamCard        game.Card      `json:"dream_card"`
 }
 
-func (a *DealCardsAction) Execute(hub *Hub) error {
+func (a *DealCardsAction) Execute() error {
 	if a.RoomID == "" {
 		return fmt.Errorf("room id is required")
 	}
-	game := hub.Room[a.RoomID].Game
+	game := a.Hub.Room[a.RoomID].Game
 
 	dealer, err := game.GameState.Dealer(game.GameTeam)
 	if err != nil {
@@ -59,7 +59,7 @@ func (a *DealCardsAction) Execute(hub *Hub) error {
 				return fmt.Errorf("failed to marshal payload: %w", err)
 			}
 
-			hub.SendMessageToClient(&Message{Action: "deal_cards", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
+			a.Hub.SendMessageToClient(&Message{Action: "deal_cards", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
 
 		}
 

@@ -2,11 +2,11 @@ package api
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
 
 	"github.com/prodanov17/znk/internal/middleware"
 	"github.com/prodanov17/znk/internal/ws"
+	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type APIServer struct {
@@ -38,7 +38,7 @@ func (s *APIServer) Run() error {
 		middleware.CORS,
 	)
 
-	log.Println("Starting server on", s.addr)
+	logger.Log.Info("Starting server on", s.addr)
 
 	return http.ListenAndServe(s.addr, stack(subrouter))
 
