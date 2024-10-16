@@ -6,15 +6,16 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
+	"github.com/prodanov17/znk/internal/types"
 	"github.com/prodanov17/znk/pkg/logger"
 )
 
 type Client struct {
-	Conn     *websocket.Conn `json:"-"`
-	Message  chan *Message   `json:"-"`
-	ID       string          `json:"id"`
-	Username string          `json:"username"`
-	RoomID   string          `json:"room_id"`
+	Conn     *websocket.Conn     `json:"-"`
+	Message  chan *types.Message `json:"-"`
+	ID       string              `json:"id"`
+	Username string              `json:"username"`
+	RoomID   string              `json:"room_id"`
 }
 
 func (c *Client) WriteMessage(hub *Hub) {
@@ -59,7 +60,7 @@ func (c *Client) ReadMessage(hub *Hub) {
 		}
 		fmt.Println("Received message: ", string(m[:]))
 
-		msg := &Message{}
+		msg := &types.Message{}
 		err = json.Unmarshal(m, msg)
 		if err != nil {
 			fmt.Printf("error unmarshaling: %v", err)
@@ -70,7 +71,7 @@ func (c *Client) ReadMessage(hub *Hub) {
 
 		if err := handleMessage(hub, msg); err != nil {
 			errorPayload, _ := json.Marshal(map[string]string{"error": err.Error()})
-			hub.SendMessageToClient(&Message{Action: "error", Payload: errorPayload, UserID: c.ID})
+			hub.SendMessageToClient(&types.Message{Action: "error", Payload: errorPayload, UserID: c.ID})
 			fmt.Printf("error handling message: %v", err)
 			continue
 		}
@@ -78,7 +79,7 @@ func (c *Client) ReadMessage(hub *Hub) {
 	}
 }
 
-func handleMessage(hub *Hub, msg *Message) error {
+func handleMessage(hub *Hub, msg *types.Message) error {
 	action, err := CreateAction(msg, hub)
 	if err != nil {
 		return fmt.Errorf("error creating action: %v", err)

@@ -1,4 +1,4 @@
-package game
+package gamestate
 
 type Player struct {
 	UserID   string `json:"user_id"`

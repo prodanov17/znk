@@ -41,18 +41,12 @@ func (s *Service) UpdateUser(id int, userPayload *types.UpdateUserPayload) (*typ
 	if userPayload.Email != nil {
 		user.Email = *userPayload.Email
 	}
-	if userPayload.PhoneNumber != nil {
-		user.PhoneNumber = userPayload.PhoneNumber
-	}
 	if userPayload.Password != nil {
 		hashedPassword, err := auth.HashPassword(*userPayload.Password)
 		if err != nil {
 			return nil, err
 		}
 		user.Password = hashedPassword
-	}
-	if userPayload.UserType != nil {
-		user.UserType = *userPayload.UserType
 	}
 
 	u, err := s.store.UpdateUser(user)
@@ -86,11 +80,9 @@ func (s *Service) RegisterUser(userPayload *types.RegisterUserPayload) (string, 
 	}
 
 	user := types.User{
-		Name:        userPayload.Name,
-		Email:       userPayload.Email,
-		Password:    hash,
-		PhoneNumber: userPayload.PhoneNumber,
-		UserType:    "customer",
+		Name:     userPayload.Name,
+		Email:    userPayload.Email,
+		Password: hash,
 	}
 
 	u, err := s.store.CreateUser(&user)

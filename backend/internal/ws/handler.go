@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/prodanov17/znk/internal/types"
 	"github.com/prodanov17/znk/internal/utils"
 	"github.com/prodanov17/znk/pkg/logger"
 )
@@ -59,7 +60,7 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 
 	cl := &Client{
 		Conn:     conn,
-		Message:  make(chan *Message, 10),
+		Message:  make(chan *types.Message, 1000),
 		ID:       clientID,
 		Username: username,
 		RoomID:   roomID,
@@ -76,9 +77,11 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetRooms(w http.ResponseWriter, r *http.Request) {
 	//authenticate user
 
-	rooms := make([]*Room, 0)
+	rooms := make([]*types.Room, 0)
 
-	for _, room := range h.hub.Room {
+	roomSlice, _ := h.hub.RoomService().GetRooms()
+
+	for _, room := range roomSlice {
 		rooms = append(rooms, room)
 	}
 
@@ -101,7 +104,7 @@ func (h *Handler) handleClearRoom(w http.ResponseWriter, r *http.Request) {
 	//authenticate user
 	roomID := r.PathValue("room_id")
 
-	err := h.hub.ClearRoom(roomID)
+	err := h.hub.RoomService().ClearRoom(roomID)
 	if err != nil {
 		utils.WriteError(w, r, http.StatusInternalServerError, err)
 		return

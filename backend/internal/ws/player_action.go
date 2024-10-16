@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/internal/services/gamestate"
+	"github.com/prodanov17/znk/internal/types"
 )
 
 type ThrowCardAction struct {
@@ -21,19 +22,19 @@ type PlayerCardCount struct {
 	Count  int    `json:"count"`
 }
 type ThrowCardResponse struct {
-	CardID           int            `json:"card_id"`
-	Card             game.Card      `json:"card"`
-	TakeCards        bool           `json:"take_cards"`
-	Value            int            `json:"value"`
-	UserID           string         `json:"user_id"`
-	Username         string         `json:"username"`
-	RoomID           string         `json:"room_id"`
-	TableCards       []game.Card    `json:"table_cards"`
-	TableValue       int            `json:"table_value"`
-	PlayersCardCount map[string]int `json:"players_card_count"`
-	PlayerHand       []game.Card    `json:"player_hand"`
-	Playing          bool           `json:"playing"`
-	NextTurn         string         `json:"next_turn_id"`
+	CardID           int              `json:"card_id"`
+	Card             gamestate.Card   `json:"card"`
+	TakeCards        bool             `json:"take_cards"`
+	Value            int              `json:"value"`
+	UserID           string           `json:"user_id"`
+	Username         string           `json:"username"`
+	RoomID           string           `json:"room_id"`
+	TableCards       []gamestate.Card `json:"table_cards"`
+	TableValue       int              `json:"table_value"`
+	PlayersCardCount map[string]int   `json:"players_card_count"`
+	PlayerHand       []gamestate.Card `json:"player_hand"`
+	Playing          bool             `json:"playing"`
+	NextTurn         string           `json:"next_turn_id"`
 }
 
 func (a *ThrowCardAction) Execute() error {
@@ -43,7 +44,10 @@ func (a *ThrowCardAction) Execute() error {
 		return err
 	}
 
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
 	value, err := game.PlayCard(a.UserID, throwCardPayload.CardID)
 	if err != nil {
@@ -59,7 +63,7 @@ func (a *ThrowCardAction) Execute() error {
 			TakeCards:        value != -1,
 			Value:            value,
 			UserID:           a.UserID,
-			Username:         a.Hub.Clients[a.UserID].Username,
+			Username:         player.Username,
 			RoomID:           a.RoomID,
 			TableCards:       game.TableCards(),
 			TableValue:       game.Table.TotalValue(),
@@ -74,7 +78,7 @@ func (a *ThrowCardAction) Execute() error {
 			return err
 		}
 
-		message := &Message{Action: "card_played", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID}
+		message := &types.Message{Action: "card_played", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID}
 		a.Hub.SendMessageToClient(message)
 	}
 
@@ -95,7 +99,7 @@ func (a *ThrowCardAction) Execute() error {
 				return err
 			}
 
-			message := &Message{Action: "game_ended", Payload: rawPayload, RoomID: a.RoomID}
+			message := &types.Message{Action: "game_ended", Payload: rawPayload, RoomID: a.RoomID}
 			a.Hub.BroadcastMessage(message)
 			a.Hub.SendMessageToClient(message)
 			return nil
@@ -111,7 +115,7 @@ func (a *ThrowCardAction) Execute() error {
 			if err != nil {
 				return err
 			}
-			message := &Message{Action: "round_over", Payload: rawPayload, RoomID: a.RoomID, UserID: "0"}
+			message := &types.Message{Action: "round_over", Payload: rawPayload, RoomID: a.RoomID, UserID: "0"}
 			a.Hub.BroadcastMessage(message)
 
 		}

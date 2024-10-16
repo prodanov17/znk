@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/internal/services/gamestate"
+	"github.com/prodanov17/znk/internal/types"
 	"github.com/prodanov17/znk/pkg/logger"
 )
 
@@ -20,10 +21,12 @@ type StartGamePayload struct {
 }
 
 func (a *StartGameAction) Execute() error {
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
-	fmt.Println("gamerule", game.Rules)
-	err := game.StartGame()
+	err = game.StartGame()
 	if err != nil {
 		return err
 	}
@@ -55,7 +58,7 @@ func (a *StartGameAction) Execute() error {
 		return err
 	}
 
-	message := &Message{Action: "game_started", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	message := &types.Message{Action: "game_started", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
 	a.Hub.BroadcastMessage(message)
 	a.Hub.SendMessageToClient(message)
 
@@ -68,9 +71,12 @@ type ChangeTeamAction struct {
 }
 
 func (a *ChangeTeamAction) Execute() error {
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
-	err := game.ChangeTeam(a.UserID)
+	err = game.ChangeTeam(a.UserID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +88,7 @@ func (a *ChangeTeamAction) Execute() error {
 	var playerPayload = map[string]interface{}{"id": a.UserID, "team_id": playerTeam.ID, "teams": game.GameTeam}
 	rawPayload, _ := json.Marshal(playerPayload)
 
-	message := &Message{Action: "team_changed", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	message := &types.Message{Action: "team_changed", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
 	a.Hub.BroadcastMessage(message)
 	a.Hub.SendMessageToClient(message)
 
@@ -95,13 +101,16 @@ type GetTeamsAction struct {
 }
 
 func (a *GetTeamsAction) Execute() error {
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
 	teams := game.GameTeam
 	var teamPayload = map[string]interface{}{"teams": teams}
 	rawPayload, _ := json.Marshal(teamPayload)
 
-	message := &Message{Action: "teams", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	message := &types.Message{Action: "teams", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
 	a.Hub.SendMessageToClient(message)
 
 	return nil
@@ -113,7 +122,10 @@ type GetDealerAction struct {
 }
 
 func (a *GetDealerAction) Execute() error {
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
 	dealer, err := game.GameState.Dealer(game.GameTeam)
 	if err != nil {
@@ -123,7 +135,7 @@ func (a *GetDealerAction) Execute() error {
 	var dealerPayload = map[string]interface{}{"dealer_id": dealer.UserID}
 	rawPayload, _ := json.Marshal(dealerPayload)
 
-	message := &Message{Action: "dealer", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	message := &types.Message{Action: "dealer", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
 	a.Hub.SendMessageToClient(message)
 
 	return nil
@@ -135,21 +147,24 @@ type GetGameStateAction struct {
 }
 
 type GameStatePayload struct {
-	State            string          `json:"state"`
-	Teams            []game.GameTeam `json:"teams"`
-	PlayerHand       []game.Card     `json:"player_hand"`
-	TableCards       []game.Card     `json:"table_cards"`
-	TableValue       int             `json:"table_value"`
-	PlayersCardCount map[string]int  `json:"players_card_count"`
-	NextTurnId       string          `json:"next_turn_id"`
-	DreamCard        game.Card       `json:"dream_card"`
-	DealerID         string          `json:"dealer_id"`
-	Playing          bool            `json:"playing"`
-	GameInfo         map[string]int  `json:"game_info"`
+	State            string               `json:"state"`
+	Teams            []gamestate.GameTeam `json:"teams"`
+	PlayerHand       []gamestate.Card     `json:"player_hand"`
+	TableCards       []gamestate.Card     `json:"table_cards"`
+	TableValue       int                  `json:"table_value"`
+	PlayersCardCount map[string]int       `json:"players_card_count"`
+	NextTurnId       string               `json:"next_turn_id"`
+	DreamCard        gamestate.Card       `json:"dream_card"`
+	DealerID         string               `json:"dealer_id"`
+	Playing          bool                 `json:"playing"`
+	GameInfo         map[string]int       `json:"game_info"`
 }
 
 func (a *GetGameStateAction) Execute() error {
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
 	nextTurn, _ := game.GameState.NextTurn(game.GameTeam)
 	dealer, _ := game.GameState.Dealer(game.GameTeam)
@@ -175,7 +190,7 @@ func (a *GetGameStateAction) Execute() error {
 				return fmt.Errorf("failed to marshal payload: %w", err)
 			}
 
-			a.Hub.SendMessageToClient(&Message{Action: "game_state", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
+			a.Hub.SendMessageToClient(&types.Message{Action: "game_state", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
 
 		}
 

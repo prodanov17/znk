@@ -21,13 +21,13 @@ type UpdateUserPayload struct {
 	PhoneNumber *string `json:"phone_number"`
 }
 
-type EstablishmentPayload struct {
-	Name        string  `json:"name" validate:"required"`
-	Address     string  `json:"address" validate:"required"`
-	PhoneNumber *string `json:"phone_number"`
+type CreateRoomPayload struct {
+	RoomID   string `json:"room_id"`
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
 }
 
-type BarberPayload struct {
-	UserID         int     `json:"user_id" validate:"required"`
-	ProfilePicture *string `json:"profile_picture"`
+type CreateGamePayload struct {
+	RoomID string `json:"room_id"`
+	UserID string `json:"user_id"`
 }

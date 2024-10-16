@@ -4,67 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
-	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/internal/types"
 	"github.com/prodanov17/znk/pkg/logger"
 )
 
-type Room struct {
-	*game.Game `json:"game"`
-	RoomID     string    `json:"room_id"`
-	Clients    []*Client `json:"clients"`
-	CreatedAt  time.Time `json:"created_at"`
-	CreatedBy  string    `json:"created_by"`
-}
-
-func (r *Room) AddClient(client *Client) {
-	r.Clients = append(r.Clients, client)
-}
-
-func (r *Room) RemoveClient(client *Client) {
-	for i, c := range r.Clients {
-		if c == client {
-			r.Clients = append(r.Clients[:i], r.Clients[i+1:]...)
-			break
-		}
-	}
-}
-
-func (h *Hub) ClearRoom(roomID string) error {
-	room, ok := h.Room[roomID]
-	if !ok {
-		return fmt.Errorf("room not found")
-	}
-
-	for _, client := range room.Clients {
-		h.UnregisterClient(client)
-	}
-
-	delete(h.Room, roomID)
-
-	logger.Log.Info("Room cleared", roomID)
-
-	return nil
-
-}
-
 type Hub struct {
 	sync.Mutex
-	Room       map[string]*Room   // _id:
-	Clients    map[string]*Client // client_id: client
-	Register   chan *Client
-	Unregister chan *Client
-	Broadcast  chan *Message
+	roomService types.RoomService
+	Clients     map[string]*Client // client_id: client
+	Register    chan *Client
+	Unregister  chan *Client
+	Broadcast   chan *types.Message
 }
 
-func NewHub() *Hub {
+func NewHub(roomService types.RoomService) *Hub {
 	return &Hub{
-		Room:       make(map[string]*Room),
-		Clients:    make(map[string]*Client),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Broadcast:  make(chan *Message, 5),
+		roomService: roomService,
+		Clients:     make(map[string]*Client),
+		Register:    make(chan *Client),
+		Unregister:  make(chan *Client),
+		Broadcast:   make(chan *types.Message, 100),
 	}
 }
 
@@ -82,6 +42,10 @@ func (h *Hub) Run() {
 	}
 }
 
+func (h *Hub) RoomService() types.RoomService {
+	return h.roomService
+}
+
 func (h *Hub) RegisterClient(client *Client) {
 	h.Register <- client
 }
@@ -90,7 +54,7 @@ func (h *Hub) UnregisterClient(client *Client) {
 	h.Unregister <- client
 }
 
-func (h *Hub) BroadcastMessage(message *Message) {
+func (h *Hub) BroadcastMessage(message *types.Message) {
 	h.Broadcast <- message
 }
 
@@ -103,45 +67,56 @@ func (h *Hub) registerClient(client *Client) {
 		return
 	}
 	if client.RoomID != "" {
-		room, ok := h.Room[client.RoomID]
-		if !ok {
-			h.Room[client.RoomID] = &Room{RoomID: client.RoomID, Game: game.NewGame(client.RoomID, client.ID), Clients: []*Client{}, CreatedAt: time.Now(), CreatedBy: client.Username}
-			room = h.Room[client.RoomID]
+		room, err := h.roomService.GetRoomByID(client.RoomID)
+		if err != nil { //rework game creation into its seperate method
+			room, err = h.roomService.CreateRoom(&types.CreateRoomPayload{RoomID: client.RoomID, UserID: client.ID, Username: client.Username})
+			if err != nil {
+				logger.Log.Errorf("Error creating room: %v", err)
+				return
+			}
+
 		}
 
-		if len(room.Clients) == 4 {
-			message := &Message{Action: "room_full", Payload: nil, RoomID: client.RoomID, UserID: client.ID}
+		if len(room.Players) == 4 {
+			message := &types.Message{Action: "room_full", Payload: nil, RoomID: client.RoomID, UserID: client.ID}
 			h.SendMessageToClient(message)
 			client.Disconnect()
 			return
 		}
 
-		room.AddClient(client)
+		err = h.roomService.AddUserToRoom(client.RoomID, client.ID, client.Username)
+		if err != nil {
+			fmt.Println("Error adding user to room")
+			return
+		}
 
-		player, err := room.Game.Player(client.ID)
+		game, err := h.roomService.GameService().GetGameByID(client.RoomID)
+		player, err := game.Player(client.ID)
 		if err != nil { //not found
-			player = &game.Player{UserID: client.ID, Username: client.Username}
-			room.Game.AddPlayer(player)
+			h.roomService.GameService().AddUserToGame(client.RoomID, player.UserID, player.Username)
 		}
 
 		logger.Log.Infof("Player %s joined room %s", client.Username, client.RoomID)
 
 		h.Clients[client.ID] = client
+		fmt.Println("got this far")
 
-		playerTeam := room.Game.PlayerTeam(client.ID)
+		playerTeam := game.PlayerTeam(client.ID)
 		if playerTeam == nil {
+			fmt.Println("Player team not found")
 			NotFound(h)
 			client.Disconnect()
 			return
 		}
 
-		var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": room.Game.GameTeam, "playerCount": len(room.Game.Players())}
+		var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": game.GameTeam, "playerCount": len(game.Players())}
 		rawPayload, _ := json.Marshal(playerPayload)
 
-		message := &Message{Action: "player_joined", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
+		message := &types.Message{Action: "player_joined", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
 		h.BroadcastMessage(message)
 		h.SendMessageToClient(message)
 	} else {
+		fmt.Println("Room not found")
 		NotFound(h)
 		client.Disconnect()
 		return
@@ -156,44 +131,48 @@ func (h *Hub) unregisterClient(client *Client) {
 	}
 	logger.Log.Infof("Player %s left room %s", client.Username, client.RoomID)
 
-	room, ok := h.Room[client.RoomID]
-	if !ok {
-		NotFound(h)
+	room, err := h.roomService.GetRoomByID(client.RoomID)
+	if err != nil {
+		logger.Log.Errorf("Error getting room: %v", err)
 		return
 	}
 
-	playerTeam := room.Game.PlayerTeam(client.ID)
+	game, err := h.roomService.GameService().GetGameByID(client.RoomID)
+	playerTeam := game.PlayerTeam(client.ID)
 	if playerTeam == nil {
 		NotFound(h)
 		return
 	}
 
-	room.RemoveClient(client)
-	if room.Game.State != "started" {
-		room.Game.RemovePlayer(client.ID)
+	h.roomService.RemoveUserFromRoom(client.RoomID, client.ID)
+	if game.State != "started" {
+		game.RemovePlayer(client.ID)
 	}
-	var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": room.Game.GameTeam, "playerCount": len(room.Game.Players())}
+	var playerPayload = map[string]interface{}{"id": client.ID, "username": client.Username, "team_id": playerTeam.ID, "teams": game.GameTeam, "playerCount": len(game.Players())}
 	rawPayload, _ := json.Marshal(playerPayload)
 
-	h.Broadcast <- &Message{Action: "player_left", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
+	h.Broadcast <- &types.Message{Action: "player_left", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
 	delete(h.Clients, client.ID)
-	if len(room.Clients) == 0 {
-		delete(h.Room, client.RoomID)
+	if len(room.Players) == 0 {
+		h.roomService.ClearRoom(client.RoomID)
 	}
 
 }
 
-func (h *Hub) broadcastMessage(message *Message) {
+func (h *Hub) broadcastMessage(message *types.Message) {
 	if message.RoomID != "" {
-		room, ok := h.Room[message.RoomID]
-		if !ok {
-			NotFound(h)
+		room, err := h.roomService.GetRoomByID(message.RoomID)
+		if err != nil {
+			logger.Log.Errorf("Error getting room: %v", err)
 			return
 		}
 
-		for _, client := range room.Clients {
-			fmt.Println(client.ID, message.UserID)
-			if client.ID == message.UserID {
+		for _, player := range room.Players {
+			if player.UserID == message.UserID {
+				continue
+			}
+			client, ok := h.Clients[player.UserID]
+			if !ok {
 				continue
 			}
 			client.Message <- message
@@ -210,7 +189,7 @@ func (h *Hub) broadcastMessage(message *Message) {
 	}
 }
 
-func (h *Hub) SendMessageToClient(message *Message) {
+func (h *Hub) SendMessageToClient(message *types.Message) {
 	client, ok := h.Clients[message.UserID]
 	if !ok {
 		return
@@ -220,8 +199,9 @@ func (h *Hub) SendMessageToClient(message *Message) {
 }
 
 func NotFound(h *Hub) {
+	fmt.Println("Not found")
 	errorPayload := map[string]interface{}{"error": " not found"}
 	rawPayload, _ := json.Marshal(errorPayload)
 
-	h.Broadcast <- &Message{Action: "error", Payload: rawPayload}
+	h.Broadcast <- &types.Message{Action: "error", Payload: rawPayload}
 }

@@ -2,6 +2,8 @@ package ws
 
 import (
 	"fmt"
+
+	"github.com/prodanov17/znk/internal/types"
 )
 
 type Action interface {
@@ -26,50 +28,50 @@ func NewBaseAction(hub *Hub, userID, roomID string) BaseAction {
 	}
 }
 
-var Actions = map[string]func(message *Message, hub *Hub) Action{
-	"message": func(message *Message, hub *Hub) Action {
+var Actions = map[string]func(message *types.Message, hub *Hub) Action{
+	"message": func(message *types.Message, hub *Hub) Action {
 		return &MessageAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"deal_cards": func(message *Message, hub *Hub) Action {
+	"deal_cards": func(message *types.Message, hub *Hub) Action {
 		return &DealCardsAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"throw_card": func(message *Message, hub *Hub) Action {
+	"throw_card": func(message *types.Message, hub *Hub) Action {
 		return &ThrowCardAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"start_game": func(message *Message, hub *Hub) Action {
+	"start_game": func(message *types.Message, hub *Hub) Action {
 		return &StartGameAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"change_team": func(message *Message, hub *Hub) Action {
+	"change_team": func(message *types.Message, hub *Hub) Action {
 		return &ChangeTeamAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"get_teams": func(message *Message, hub *Hub) Action {
+	"get_teams": func(message *types.Message, hub *Hub) Action {
 		return &GetTeamsAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"game_state": func(message *Message, hub *Hub) Action {
+	"game_state": func(message *types.Message, hub *Hub) Action {
 		return &GetGameStateAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
 		}
 	},
-	"get_dealer": func(message *Message, hub *Hub) Action {
+	"get_dealer": func(message *types.Message, hub *Hub) Action {
 		return &GetDealerAction{
 			BaseAction: NewBaseAction(hub, message.UserID, message.RoomID),
 			Payload:    message.Payload,
@@ -77,7 +79,7 @@ var Actions = map[string]func(message *Message, hub *Hub) Action{
 	},
 }
 
-func CreateAction(message *Message, hub *Hub) (Action, error) {
+func CreateAction(message *types.Message, hub *Hub) (Action, error) {
 	constructor, ok := Actions[message.Action]
 	if !ok {
 		return nil, fmt.Errorf("action type %s not found", message.Action)

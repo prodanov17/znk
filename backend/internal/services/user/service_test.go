@@ -15,12 +15,10 @@ func TestUserUpdate(t *testing.T) {
 	service := NewService(store)
 
 	existingUser := &types.User{
-		ID:          1,
-		Name:        "Jane Doe",
-		Email:       "jane@doe.com",
-		PhoneNumber: utils.StringPtr("1234567890"),
-		Password:    "password",
-		UserType:    "customer",
+		ID:       1,
+		Name:     "Jane Doe",
+		Email:    "jane@doe.com",
+		Password: "password",
 	}
 
 	store.GetUserByIDFunc = func(id int) (*types.User, error) {
@@ -35,7 +33,6 @@ func TestUserUpdate(t *testing.T) {
 
 		u.Name = user.Name
 		u.Email = user.Email
-		u.PhoneNumber = user.PhoneNumber
 		u.Password = user.Password
 
 		return u, nil
@@ -59,9 +56,6 @@ func TestUserUpdate(t *testing.T) {
 		}
 		if updatedUser.Email != *userPayload.Email {
 			t.Errorf("Expected email to be %s, got %s", *userPayload.Email, updatedUser.Email)
-		}
-		if *updatedUser.PhoneNumber != *userPayload.PhoneNumber {
-			t.Errorf("Expected phone number to be %s, got %s", *userPayload.PhoneNumber, *updatedUser.PhoneNumber)
 		}
 		if !auth.ComparePasswords(updatedUser.Password, *userPayload.Password) {
 			t.Errorf("Passwords do not match")
@@ -115,10 +109,6 @@ func TestUserUpdate(t *testing.T) {
 			t.Errorf("Expected name to remain %s, got %s", existingUser.Name, updatedUser.Name)
 		}
 
-		if *updatedUser.PhoneNumber != *existingUser.PhoneNumber {
-			t.Errorf("Expected phone number to remain %s, got %s", *existingUser.PhoneNumber, *updatedUser.PhoneNumber)
-		}
-
 		if updatedUser.Password != existingUser.Password {
 			t.Errorf("Expected password to remain the same")
 		}
@@ -131,10 +121,9 @@ func TestRegisterUser(t *testing.T) {
 	service := NewService(store)
 
 	existingUser := &types.User{
-		ID:          1,
-		Name:        "Jane Doe",
-		Email:       "jane@doe.com",
-		PhoneNumber: utils.StringPtr("1234567890"),
+		ID:    1,
+		Name:  "Jane Doe",
+		Email: "jane@doe.com",
 	}
 
 	store.GetUserByEmailFunc = func(email string) (*types.User, error) {

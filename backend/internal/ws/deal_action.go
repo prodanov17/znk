@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/prodanov17/znk/internal/game"
+	"github.com/prodanov17/znk/internal/services/gamestate"
+	"github.com/prodanov17/znk/internal/types"
 )
 
 type DealCardsAction struct {
@@ -13,19 +14,22 @@ type DealCardsAction struct {
 }
 
 type DealCardsPayload struct {
-	Cards            []game.Card    `json:"cards"`
-	TableCards       []game.Card    `json:"table_cards"`
-	TableValue       int            `json:"table_value"`
-	PlayersCardCount map[string]int `json:"players_card_count"`
-	NextTurnId       string         `json:"next_turn_id"`
-	DreamCard        game.Card      `json:"dream_card"`
+	Cards            []gamestate.Card `json:"cards"`
+	TableCards       []gamestate.Card `json:"table_cards"`
+	TableValue       int              `json:"table_value"`
+	PlayersCardCount map[string]int   `json:"players_card_count"`
+	NextTurnId       string           `json:"next_turn_id"`
+	DreamCard        gamestate.Card   `json:"dream_card"`
 }
 
 func (a *DealCardsAction) Execute() error {
 	if a.RoomID == "" {
 		return fmt.Errorf("room id is required")
 	}
-	game := a.Hub.Room[a.RoomID].Game
+	game, err := a.Hub.RoomService().GameService().GetGameByID(a.RoomID)
+	if err != nil {
+		return fmt.Errorf("failed to get game: %w", err)
+	}
 
 	dealer, err := game.GameState.Dealer(game.GameTeam)
 	if err != nil {
@@ -59,7 +63,7 @@ func (a *DealCardsAction) Execute() error {
 				return fmt.Errorf("failed to marshal payload: %w", err)
 			}
 
-			a.Hub.SendMessageToClient(&Message{Action: "deal_cards", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
+			a.Hub.SendMessageToClient(&types.Message{Action: "deal_cards", Payload: rawPayload, RoomID: a.RoomID, UserID: player.UserID})
 
 		}
 

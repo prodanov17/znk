@@ -1,4 +1,4 @@
-package game
+package gamestate
 
 type GameTeam struct {
 	ID            int       `json:"team_id"`

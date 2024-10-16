@@ -60,7 +60,7 @@ func (s *Store) GetUserByEmail(email string) (*types.User, error) {
 }
 
 func (s *Store) UpdateUser(user *types.User) (*types.User, error) {
-	_, err := s.db.Exec("UPDATE users SET name = ?, email = ?, password = ?, phone_number = ?, user_type = ? WHERE id = ?", user.Name, user.Email, user.Password, user.PhoneNumber, user.UserType, user.ID)
+	_, err := s.db.Exec("UPDATE users SET name = ?, email = ?, password = ?, phone_number = ?, user_type = ? WHERE id = ?", user.Name, user.Email, user.Password, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (s *Store) UpdateUser(user *types.User) (*types.User, error) {
 }
 
 func (s *Store) CreateUser(user *types.User) (*types.User, error) {
-	res, err := s.db.Exec("INSERT INTO users (name, email, password, phone_number, user_type) VALUES (?,?,?,?,?)", user.Name, user.Email, user.Password, user.PhoneNumber, user.UserType)
+	res, err := s.db.Exec("INSERT INTO users (name, email, password, phone_number, user_type) VALUES (?,?,?,?,?)", user.Name, user.Email, user.Password)
 
 	if err != nil {
 		return nil, err
@@ -91,8 +91,6 @@ func scanRowsIntoUser(rows *sql.Rows) (*types.User, error) {
 		&user.Name,
 		&user.Email,
 		&user.Password,
-		&user.PhoneNumber,
-		&user.UserType,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)

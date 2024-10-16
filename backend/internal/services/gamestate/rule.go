@@ -1,4 +1,4 @@
-package game
+package gamestate
 
 func DefaultRules() map[string]int {
 	m := make(map[string]int)

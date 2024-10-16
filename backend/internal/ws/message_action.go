@@ -3,6 +3,8 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/prodanov17/znk/internal/types"
 )
 
 type MessageAction struct {
@@ -23,7 +25,12 @@ func (a *MessageAction) Execute() error {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	username := a.Hub.Clients[a.UserID].Username
+	player, err := a.Hub.RoomService().GetPlayerById(a.RoomID, a.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to get room: %w", err)
+	}
+
+	username := player.Username
 	messagePayload.Username = username
 
 	if messagePayload.Message == "" {
@@ -34,7 +41,7 @@ func (a *MessageAction) Execute() error {
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	message := &Message{Action: "message", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
+	message := &types.Message{Action: "message", Payload: rawPayload, RoomID: a.RoomID, UserID: a.UserID}
 	a.Hub.BroadcastMessage(message)
 	a.Hub.SendMessageToClient(message)
 	return nil

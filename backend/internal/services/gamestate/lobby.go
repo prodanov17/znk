@@ -1,4 +1,4 @@
-package game
+package gamestate
 
 type Lobby struct {
 	ID        string `json:"id"`

@@ -1,4 +1,4 @@
-package game
+package gamestate
 
 import (
 	"fmt"
@@ -406,4 +406,13 @@ func (g *Game) PlayersCardCount() map[string]int {
 
 func (g *Game) UpdateRule(rule string, value int) {
 	g.Rules[rule] = value
+}
+
+func (g *Game) ClearGame() {
+	g.ResetGame()
+	g.GameTeam = []GameTeam{}
+	g.Deck = nil
+	g.GameState = nil
+	g.Rules = nil
+	g.Table = nil
 }
