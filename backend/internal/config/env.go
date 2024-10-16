@@ -18,6 +18,10 @@ type Config struct {
 	DBPassword             string
 	DBAddress              string
 	DBName                 string
+	RabbitMQHost           string
+	RabbitMQPort           string
+	RabbitMQUser           string
+	RabbitMQPassword       string
 	JWTSecret              string
 	DeckPath               string
 	JWTExpirationInSeconds int64
@@ -38,6 +42,10 @@ func initConfig() Config {
 		DBPassword:             getEnv("DB_PASSWORD", ""),
 		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "host.docker.internal"), getEnv("DB_PORT", "5432")),
 		DBName:                 getEnv("DB_DATABASE", "znk"),
+		RabbitMQHost:           getEnv("RABBITMQ_HOST", "localhost"),
+		RabbitMQPort:           getEnv("RABBITMQ_PORT", "5672"),
+		RabbitMQUser:           getEnv("RABBITMQ_USER", "guest"),
+		RabbitMQPassword:       getEnv("RABBITMQ_PASSWORD", "guest"),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
 		DeckPath:               getEnv("DECK_PATH", "assets/cards.json"),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXPIRATION_IN_SECONDS", 3600*24*7),
