@@ -29,16 +29,47 @@ var upgrader = websocket.Upgrader{
 }
 
 func (h *Handler) RegisterRoutes(router *http.ServeMux) {
-	router.HandleFunc("/ws/join/{lobbyID}", h.handleJoinLobby)
+	router.HandleFunc("/ws/join/{roomID}", h.handleJoinRoom)
 	router.HandleFunc("/ws/rooms", h.handleGetRooms)
+	router.HandleFunc("/ws/rooms/{room_id}", h.handleGetRoom)
 	router.HandleFunc("/ws/clients", h.handleGetClients)
 	router.HandleFunc("POST /ws/rooms/{room_id}/clear", h.handleClearRoom)
+	router.HandleFunc("POST /ws/rooms", h.handleCreateRoom)
 }
 
-func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleGetRoom(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	room, err := h.hub.RoomService().GetRoomByID(roomID)
+	if err != nil {
+		utils.WriteError(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, room)
+}
+
+func (h *Handler) handleCreateRoom(w http.ResponseWriter, r *http.Request) {
+	var createRoomPayload types.CreateRoomPayload
+
+	err := utils.ParseJSON(r, &createRoomPayload)
+	if err != nil {
+		utils.WriteError(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	room, err := h.hub.RoomService().CreateRoom(&createRoomPayload)
+	if err != nil {
+		utils.WriteError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, room)
+}
+
+func (h *Handler) handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 	//authenticate user
 
-	roomID := r.PathValue("lobbyID")
+	roomID := r.PathValue("roomID")
 	clientID := r.URL.Query().Get("userId")
 	username := r.URL.Query().Get("username")
 
@@ -52,6 +83,12 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, err := h.hub.RoomService().GetRoomByID(roomID)
+	if err != nil {
+		utils.WriteError(w, r, http.StatusNotFound, err)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		utils.WriteError(w, r, http.StatusInternalServerError, err)
@@ -60,7 +97,7 @@ func (h *Handler) handleJoinLobby(w http.ResponseWriter, r *http.Request) {
 
 	cl := &Client{
 		Conn:     conn,
-		Message:  make(chan *types.Message, 1000),
+		Message:  make(chan *types.Message, 10),
 		ID:       clientID,
 		Username: username,
 		RoomID:   roomID,

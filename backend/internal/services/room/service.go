@@ -1,12 +1,15 @@
 package room
 
 import (
+	"sync"
 	"time"
 
 	"github.com/prodanov17/znk/internal/types"
+	"github.com/prodanov17/znk/internal/utils"
 )
 
 type Service struct {
+	sync.Mutex
 	gameService types.GameService
 	repo        types.RoomRepository
 }
@@ -24,8 +27,12 @@ func (s *Service) GameService() types.GameService {
 
 // CreateRoom creates a new room
 func (s *Service) CreateRoom(roomPayload *types.CreateRoomPayload) (*types.Room, error) {
+	s.Lock()
+	defer s.Unlock()
+	//generate random room id
+	roomID := utils.GenerateRandomString(6)
 	room := &types.Room{
-		RoomID:    roomPayload.RoomID,
+		RoomID:    roomID,
 		CreatedBy: roomPayload.UserID,
 		CreatedAt: time.Now(),
 		Players:   []*types.Player{},
@@ -36,7 +43,7 @@ func (s *Service) CreateRoom(roomPayload *types.CreateRoomPayload) (*types.Room,
 	}
 
 	gamePayload := &types.CreateGamePayload{
-		RoomID: roomPayload.RoomID,
+		RoomID: roomID,
 		UserID: roomPayload.UserID,
 	}
 	s.gameService.CreateGame(gamePayload)

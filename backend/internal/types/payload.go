@@ -22,7 +22,6 @@ type UpdateUserPayload struct {
 }
 
 type CreateRoomPayload struct {
-	RoomID   string `json:"room_id"`
 	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 }

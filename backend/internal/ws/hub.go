@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/prodanov17/znk/internal/types"
 	"github.com/prodanov17/znk/pkg/logger"
@@ -24,7 +25,7 @@ func NewHub(roomService types.RoomService) *Hub {
 		Clients:     make(map[string]*Client),
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
-		Broadcast:   make(chan *types.Message, 100),
+		Broadcast:   make(chan *types.Message, 10),
 	}
 }
 
@@ -69,12 +70,8 @@ func (h *Hub) registerClient(client *Client) {
 	if client.RoomID != "" {
 		room, err := h.roomService.GetRoomByID(client.RoomID)
 		if err != nil { //rework game creation into its seperate method
-			room, err = h.roomService.CreateRoom(&types.CreateRoomPayload{RoomID: client.RoomID, UserID: client.ID, Username: client.Username})
-			if err != nil {
-				logger.Log.Errorf("Error creating room: %v", err)
-				return
-			}
-
+			// room, err = h.roomService.CreateRoom(&types.CreateRoomPayload{UserID: client.ID, Username: client.Username})
+			return
 		}
 
 		if len(room.Players) == 4 {
@@ -153,10 +150,34 @@ func (h *Hub) unregisterClient(client *Client) {
 
 	h.Broadcast <- &types.Message{Action: "player_left", Payload: rawPayload, RoomID: client.RoomID, UserID: client.ID}
 	delete(h.Clients, client.ID)
+	// Check if room is empty and set a 5-second timeout to delete the room if empty
 	if len(room.Players) == 0 {
-		h.roomService.ClearRoom(client.RoomID)
+		go h.scheduleRoomDeletion(client.RoomID, 5*time.Second)
+	}
+}
+
+// scheduleRoomDeletion waits for a specified duration and then deletes the room if it's still empty
+func (h *Hub) scheduleRoomDeletion(roomID string, delay time.Duration) {
+	// Wait for the specified duration
+	time.Sleep(delay)
+
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
+
+	// Re-check if the room is still empty
+	room, err := h.roomService.GetRoomByID(roomID)
+	if err != nil {
+		logger.Log.Errorf("Error getting room: %v", err)
+		return
 	}
 
+	if len(room.Players) == 0 {
+		// Room is empty, proceed to delete
+		logger.Log.Infof("Room %s is empty. Deleting room...", roomID)
+		h.roomService.ClearRoom(roomID)
+	} else {
+		logger.Log.Infof("Room %s is not empty. Skipping room deletion.", roomID)
+	}
 }
 
 func (h *Hub) broadcastMessage(message *types.Message) {

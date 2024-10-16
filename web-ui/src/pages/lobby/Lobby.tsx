@@ -1,5 +1,5 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { SwitchIcon } from "../../components/Icons";
+import { ClipboardIcon, SwitchIcon } from "../../components/Icons";
 import { useEffect, useRef, useState } from "react";
 import { WebSocketService } from "../../services/websocketService";
 import { toast } from "react-toastify";
@@ -148,6 +148,15 @@ const Lobby = () => {
             {/* Header Section */}
             <header className="w-full text-center mb-6">
                 <h1 className="text-3xl font-bold text-white">Game Lobby</h1>
+                <h2 className="text-lg font-semibold text-gray-400 space-x-2">
+                    <span>Join Code: {room_id}</span>
+                    <button className="" onClick={() => {
+                        navigator.clipboard.writeText(room_id || "")
+                        toast.info("Join code copied to clipboard!")
+                    }}>
+                        <ClipboardIcon />
+                    </button>
+                </h2>
                 {playerCount < 4 ? <p className="text-gray-400">Waiting for players...</p> : <p className="text-green-400">Ready to start!</p>}
                 <p className="text-gray-300 font-medium">Players: {playerCount}/4</p> {/* Display player count */}
             </header>
