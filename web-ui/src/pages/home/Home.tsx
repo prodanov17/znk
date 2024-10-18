@@ -16,7 +16,7 @@ const Home = () => {
 
     const handleCreateRoom = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/v1/ws/rooms', {
+            const res = await fetch('http://139.162.132.184:8000/api/v1/ws/rooms', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -48,7 +48,7 @@ const Home = () => {
                 toast.error('Room ID is required');
                 return;
             }
-            const res = await fetch(`http://localhost:8000/api/v1/ws/rooms/${roomId}`, {
+            const res = await fetch(`http://139.162.132.184:8000/api/v1/ws/rooms/${roomId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -25,7 +25,7 @@ func NewHub(roomService types.RoomService) *Hub {
 		Clients:     make(map[string]*Client),
 		Register:    make(chan *Client),
 		Unregister:  make(chan *Client),
-		Broadcast:   make(chan *types.Message, 10),
+		Broadcast:   make(chan *types.Message, 1000),
 	}
 }
 
@@ -181,6 +181,8 @@ func (h *Hub) scheduleRoomDeletion(roomID string, delay time.Duration) {
 }
 
 func (h *Hub) broadcastMessage(message *types.Message) {
+	h.Mutex.Lock()
+	defer h.Mutex.Unlock()
 	if message.RoomID != "" {
 		room, err := h.roomService.GetRoomByID(message.RoomID)
 		if err != nil {

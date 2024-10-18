@@ -21,8 +21,8 @@ func NewHandler(hub *Hub) *Handler {
 }
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  4096,
+	WriteBufferSize: 4096,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -97,7 +97,7 @@ func (h *Handler) handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	cl := &Client{
 		Conn:     conn,
-		Message:  make(chan *types.Message, 10),
+		Message:  make(chan *types.Message, 1000),
 		ID:       clientID,
 		Username: username,
 		RoomID:   roomID,

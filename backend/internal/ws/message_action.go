@@ -25,7 +25,7 @@ func (a *MessageAction) Execute() error {
 		return fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
-	player, err := a.Hub.RoomService().GetPlayerById(a.RoomID, a.UserID)
+	player, err := a.Hub.roomService.GetPlayerById(a.RoomID, a.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to get room: %w", err)
 	}
