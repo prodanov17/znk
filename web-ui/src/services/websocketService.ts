@@ -6,7 +6,10 @@ type WebSocketAction = {
 
 export class WebSocketService {
   private static instance: WebSocketService | null = null;
-  private urlBase = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+  private urlBase =
+    import.meta.env.VITE_APP_ENV === "dev"
+      ? import.meta.env.VITE_WS_DEV_URL
+      : import.meta.env.VITE_WS_PROD_URL;
   private url: string;
   private ws: WebSocket | null;
   private eventHandlers: Record<string, (message: WebSocketAction) => void>;

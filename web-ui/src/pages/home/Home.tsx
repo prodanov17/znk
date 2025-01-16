@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api from '../../utils/fetching';
 
 const Home = () => {
     const [userId, setUserId] = useState('');
@@ -16,26 +17,14 @@ const Home = () => {
 
     const handleCreateRoom = async () => {
         try {
-            const res = await fetch('http://139.162.132.184:8000/api/v1/ws/rooms', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    username: username,
-                }),
-            });
+            const res = await api.post('ws/rooms', {
+                user_id: userId,
+                username: username,
+            }) as { room_id: string };
+            setRoomId(res.room_id);
+            toast.success('Room created successfully');
+            navigate(`/lobby/${res.room_id}?userId=${userId}&username=${username}`);
 
-            if (res.ok) {
-                const data = await res.json();
-                setRoomId(data.room_id);
-                toast.success('Room created successfully');
-                navigate(`/lobby/${data.room_id}?userId=${userId}&username=${username}`);
-
-            } else {
-                toast.error('Failed to create room');
-            }
         } catch (error) {
             toast.error('Failed to create room');
             console.error('Failed to create room:', error);
@@ -48,30 +37,17 @@ const Home = () => {
                 toast.error('Room ID is required');
                 return;
             }
-            const res = await fetch(`http://139.162.132.184:8000/api/v1/ws/rooms/${roomId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-            console.log(res)
-            if (res.ok) {
-                console.log("HERE")
-                const response = await res.json();
-                console.log(res)
-                if (response.clients.length >= 4) {
-                    toast.error('Room is full');
-                    return;
-                }
-
-                if (!response.room_id) {
-                    toast.error('Room not found');
-                    return;
-                }
-                navigate(`/lobby/${roomId}?userId=${userId}&username=${username}`);
-            } else {
-                toast.error('Room not found');
+            const response = await api.get(`ws/rooms/${roomId}`) as { clients: unknown[], room_id: string };
+            if (response.clients.length >= 4) {
+                toast.error('Room is full');
+                return;
             }
+
+            if (!response.room_id) {
+                toast.error('Room not found');
+                return;
+            }
+            navigate(`/lobby/${roomId}?userId=${userId}&username=${username}`);
 
         } catch (error) {
             toast.error('Failed to join room');

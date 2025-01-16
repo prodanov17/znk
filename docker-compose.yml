@@ -30,12 +30,9 @@ services:
       context: ./web-ui  # Path to your React app Dockerfile
       dockerfile: Dockerfile
     ports:
-      - "3000:80"  # Map port 5173 on host to port 80 in the container
+      - "3001:80"  # Map port 5173 on host to port 80 in the container
     depends_on:
       - backend  # Ensure the backend starts before the frontend
-    environment:
-      VITE_API_URL: http://backend:8000
-      VITE_WS_URL: ws://backend:8000
     networks:
       - znk-network
 

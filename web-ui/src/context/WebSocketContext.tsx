@@ -9,7 +9,7 @@ export const WebSocketProvider = ({ children }: { children: React.ReactNode }) =
     const connectWebSocket = (url: string) => {
         if (!wsServiceRef.current) {
             console.log("Connecting to WebSocket");
-            const wsService = new WebSocketService(url);
+            const wsService = WebSocketService.getInstance(url);
             wsService.connect();
             wsServiceRef.current = wsService;
         }
